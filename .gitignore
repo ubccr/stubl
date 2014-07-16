@@ -1,2 +1,3 @@
 conf/stubl
-
+log/NodeInfo.log
+src/slurmbf/*.o
