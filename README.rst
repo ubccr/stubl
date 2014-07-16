@@ -120,9 +120,9 @@ Summary of STUBL SLURM Commands
   users.  For each job that was run after the given start date, the following
   information is gathered from the SLURM accounting logs:  
 
-     - num CPUS, start time, elapsed time, 
-     - Amount of RAM Requested, Average RAM 
-     - Used and Max RAM Used
+  - num CPUS, start time, elapsed time, 
+  - Amount of RAM Requested, Average RAM 
+  - Used and Max RAM Used
 
 ----------
 License
