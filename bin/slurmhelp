@@ -111,7 +111,7 @@ echo "
       for jobs, partitions, and nodes 
       managed by SLURM.
 
-   Summary of SUTBL SLURM Commands
+   Summary of STUBL SLURM Commands
    =========================================
    These are commands added by UB CCR staff
    and others as part of STUBL (SLURM Tools
