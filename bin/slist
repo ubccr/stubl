@@ -1,0 +1,40 @@
+#!/bin/bash
+
+if [ "$1" == "--help" ]; then
+  echo "======================================================="
+  echo ""
+  echo "  slist - a script that retrieves accounting           "
+  echo "  and node information for a running or completed job. "
+  echo ""
+  echo "  Usage: slist [job_id] "
+  echo ""
+  echo "======================================================="
+
+  exit
+fi
+
+if [ "$1" == "" ]; then
+  echo "Please supply a job id."
+  exit
+fi
+
+# basic accounting information
+echo "JobID        User      Partition       NNodes NCPUS  Start               Elapsed      State      Priority   "
+echo "------------ --------- --------------- ------ ------ ------------------- ------------ ---------- -----------"
+sacct -j $1 --format=jobid%-12,user%-9,partition%-15,nnodes%-6,ncpus%-6,start%-19,elapsed%-12,state%-10,priority%-11 -X -n
+
+part=`sacct -j $1 --format=partition%-20 -X -n`
+
+#nodelist
+echo " "
+nodelist=`sacct -j $1 --format=nodelist -P -X -n | nodeset -e | grep -v "None assigned" | tr ' ' '\n' `
+j=0
+for i in $nodelist; do
+  if [ "$j" == "0" ]; then
+    snodes $i $part
+  else
+    snodes $i $part | tail -n1
+  fi
+  j=1
+done
+

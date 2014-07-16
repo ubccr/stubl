@@ -1,0 +1,148 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Author: Pär Andersson (National Supercomputer Centre, Sweden)
+# Version: 0.3 2007-07-30
+#
+# 2011-06-23: Joerg Bornschein <bornschein@fias.uni-frankfurt.de>
+#   Make this script find its own path
+#   https://github.com/jbornschein/srun.x11/blob/master/srun.x11
+#
+# 2014-06-26: L. Shawn Matott <lsmatott@buffalo.edu>
+#   fisbatch is based on srun.x11 with extensions to handle
+#   centers that have multiple clusters and partitions. It also,
+#   has additional logic to detect and report downtimes rather
+#   than leave users waiting on resources that are not available
+#   and likely won't be available for some time.
+#
+# This will submit a batch script that starts screen on a node.
+# Then ssh is used to connect to the node and attach the screen.
+# The result is very similar to an interactive shell in PBS
+# (qsub -I)
+#
+#  FISBATCH = Friendly Interactive SBATCH
+#
+
+# determine STUBL install location
+if [ -z "$STUBL_HOME" -o ! -d "$STUBL_HOME" ] ; then
+  ## resolve links - $0 may be a link to stubl's home
+  PRG="$0"
+  progname=`basename "$0"`
+
+  # need this for relative symlinks
+  while [ -h "$PRG" ] ; do
+    ls=`ls -ld "$PRG"`
+    link=`expr "$ls" : '.*-> \(.*\)$'`
+    if expr "$link" : '/.*' > /dev/null; then
+    PRG="$link"
+    else
+    PRG=`dirname "$PRG"`"/$link"
+    fi
+  done
+
+  STUBL_HOME=`dirname "$PRG"`/..
+
+  # make it fully qualified
+  STUBL_HOME=`cd "$STUBL_HOME" > /dev/null && pwd`
+fi
+
+# setup STUBL environment
+. $STUBL_HOME/conf/stubl 
+
+# Location of helper scripts
+MYDIR=$STUBL_HOME/bin/fisbatch_helpers
+
+# Batch Script that starts SCREEN
+BS=$MYDIR/_interactive
+# Interactive screen script
+IS=$MYDIR/_interactive_screen
+
+cluster=`echo $@ | tr ' ' '\n' | grep "\-\-clusters=" | cut -d'=' -f2`
+if [ "$cluster" == "" ]; then
+  cluster=$STUBL_DEFAULT_CLUSTER
+fi
+
+# make sure the cluster exists
+nclus=`squeue --clusters=$cluster 2>&1 | grep 'No cluster' | wc -l`
+if [ "$nclus" != "0" ]; then
+  echo "There are no clusters named ${cluster}!"
+  exit 1
+fi
+if [ "$cluster" == "all" ]; then
+  echo "fisbatch does not support --clusters=all!"
+  exit 1
+fi
+
+
+partition=`echo $@ | tr ' ' '\n' | grep "\-\-partition=" | cut -d'=' -f2`
+if [ "$partition" == "" ]; then
+  partition=$STUBL_DEFAULT_PARTITION
+fi
+
+# make sure the partition exists
+npart1=`snodes all ${cluster}/all | grep " ${partition} " | wc -l`
+npart2=`snodes all ${cluster}/all | grep " ${partition}\* " | wc -l`
+if [ "$npart1" == "0" -a "$npart2" == "0" ]; then
+  echo "There are no partitions named ${partition} in the ${cluster} cluster!"
+  exit 1
+fi
+
+# check for node maintenance
+c1=`snodes all ${cluster}/${partition} | wc -l`
+c1=`expr $c1 - 1`
+d1=`snodes all ${cluster}/${partition} | grep down | wc -l`
+c2=`snodes all ${cluster}/${partition} | grep maint | wc -l`
+c3=`expr $d1 + $c2`
+#echo "Total number of nodes in ${cluster}/${partition} = $c1"
+#echo "Number of nodes in ${cluster}/${partition} that are under maintenance = $c2"
+#echo "Number of nodes in  ${cluster}/${partition} that are down = $d1"
+if [ "$c1" == "$c3" ]; then
+  echo "All nodes in  ${cluster}/${partition} are down or undergoing maintenance!"
+  exit
+fi
+
+# Submit the job and get the job id
+MyExport=SLURM_CPUS_PER_TASK,SLURM_JOB_NAME,SLURM_NTASKS_PER_NODE,SLURM_PRIO_PROCESS,SLURM_SUBMIT_DIR,SLURM_SUBMIT_HOST
+#JOB=`sbatch --export=$MyExport --job-name=FISBATCH --output=/dev/null --error=/dev/null $@ $BS 2>&1 | egrep -o -e "\b[0-9]+$"`
+JOB=`sbatch --export=$MyExport --job-name=FISBATCH --output=/dev/null --error=/dev/null $@ $BS 2>&1 | egrep -o -e "\b[0-9]+"`
+JOB=`echo $JOB | awk '{ printf("%d", $1 + 0); }'`
+
+# Make sure the job is always canceled
+trap "{ $STUBL_SCANCEL --clusters=$cluster --partition=$partition $JOB; exit; }" SIGINT SIGTERM EXIT
+
+echo "FISBATCH -- waiting for JOBID $JOB to start on cluster=$cluster and partition=$partition"
+while true; do
+    sleep 1s
+
+    # Check job status
+    STATUS=`squeue --clusters=$cluster --partition=$partition -j $JOB -t PD,R -h -o %t | grep -v "^CLUSTER"`
+
+    if [ "$STATUS" = "R" ];then
+	# Job is running, break the while loop
+        echo "!"
+	break
+    elif [ "$STATUS" != "PD" ];then
+        echo "!"
+	echo "Job is not Running or Pending. Aborting"
+        scancel --clusters=$cluster --partition=$partition $JOB 2>/dev/null
+        echo "FISBATCH -- aborting job ($JOB)"
+	exit 1
+    fi
+
+    echo -n "."
+done
+
+# Determine the first node in the job:
+#NODE=`srun --jobid=$JOB -N1 hostname`
+NODE=`squeue -h --clusters=${cluster} --partition=${partition} --jobs=${JOB} -o %N | grep -v "^CLUSTER"`
+NODE=`nodeset -e $NODE | awk '{ print $1 }'`
+
+echo "FISBATCH -- Connecting to head node ($NODE)"
+# a brief pause is needed?
+sleep 1s
+
+# SSH to the node and attach the screen
+ssh -X -t $NODE $IS slurm$JOB
+
+# The trap will now cancel the job before exiting.
+echo "FISBATCH -- exiting job"
+

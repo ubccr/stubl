@@ -1,0 +1,134 @@
+#!/bin/bash
+
+# determine STUBL install location
+if [ -z "$STUBL_HOME" -o ! -d "$STUBL_HOME" ] ; then
+  ## resolve links - $0 may be a link to stubl's home
+  PRG="$0"
+  progname=`basename "$0"`
+
+  # need this for relative symlinks
+  while [ -h "$PRG" ] ; do
+    ls=`ls -ld "$PRG"`
+    link=`expr "$ls" : '.*-> \(.*\)$'`
+    if expr "$link" : '/.*' > /dev/null; then
+    PRG="$link"
+    else
+    PRG=`dirname "$PRG"`"/$link"
+    fi
+  done
+
+  STUBL_HOME=`dirname "$PRG"`/..
+
+  # make it fully qualified
+  STUBL_HOME=`cd "$STUBL_HOME" > /dev/null && pwd`
+fi
+
+# setup STUBL environment
+. $STUBL_HOME/conf/stubl 
+
+if [ "$1" == "" -o "$1" == "--help" ]; then
+  echo "====================================================="
+  echo " pbs2sbatch "
+  echo " "
+  echo "    Convert PBS directive to equivalent SBATCH form. "
+  echo " "
+  echo "    Usage : "
+  echo "            pbs2sbatch \"<pbs_directive>\" "
+  echo "            pbs2sbatch <pbs_script_file> "
+  echo "====================================================="
+  exit
+fi
+
+# export=NONE is too agressive as it will clobber important SLURM
+# variables. Use this concoction istead.
+MyExport=SLURM_CPUS_PER_TASK,SLURM_JOB_NAME,SLURM_NTASKS_PER_NODE,SLURM_PRIO_PROCESS,SLURM_SUBMIT_DIR,SLURM_SUBMIT_HOST
+
+# ======================================================
+# These variables are CCR-specific PBS-SLURM mappings.
+# Others may want to adjust to match their system.
+# ======================================================
+#xIB1=--extra-node-info=2:6:1
+xIB1="--constraint=CPU-E5645"
+#xIB2=--extra-node-info=2:4:1
+xIB2="--constraint=CPU-L5630_LSMOR_CPU-L5520"
+#xGPU=--extra-node-info=2:6:1
+xGPU="--constraint=CPU-X5650"
+#xIB3=--extra-node-info=2:6:1
+xIB3="--constraint=CPU-X5650"
+#xIB4=--extra-node-info=4:8:1
+xIB4="--constraint=CPU-E7-4830_LSMOR_CPU-6132HE"
+
+if [ ! -f "$1" ]; then
+  # if present, convert requested memory from GB to MB
+  PMEM=""
+  MEM=`echo $@ | grep MEM | sed 's/MEM/|/g' | sed 's/GB/|/g' | cut -d'|' -f2`
+  if [ "$MEM" != "" ]; then
+    MEM=`expr $MEM \* 1000`
+  else
+    PMEM=`echo $@ | grep 'ppn=' | sed 's/ppn=/|/g' | cut -d'|' -f2`
+    if [ "$PMEM" != "" ]; then
+      if [ `echo $@ | grep 'IB1' | wc -l` == "1" ]; then
+        PMEM=`expr $PMEM \* 4000`
+      elif [ `echo $@ | grep 'IB3' | wc -l` == "1" ]; then
+        PMEM=`expr $PMEM \* 4000`
+      elif [ `echo $@ | grep 'GPU' | wc -l` == "1" ]; then
+        PMEM=`expr $PMEM \* 4000`
+      elif [ `echo $@ | grep 'IB4' | wc -l` == "1" ]; then
+        PMEM=`expr $PMEM \* 8000`
+      else
+        PMEM=`expr $PMEM \* 3000`
+      fi
+    fi
+  fi
+echo $@ | sed 's/PBS/SBATCH/g' | \
+  sed '/#SBATCH -S */d' |
+  sed 's/:GM/:IB2/g' | \
+  sed 's/:IB[^0-9][:]*/:/g' | \
+  sed 's/:XEON//g' | \
+  sed 's/-l[ ]*walltime/--time/g'   | \
+  sed 's/-l[ ]*nodes/--nodes/g' | \
+  sed "s/:IB1:/|#SBATCH ${xIB1}|/g" | \
+  sed "s/:IB2:/|#SBATCH ${xIB2}|/g" | \
+  sed "s/:IB3:/|#SBATCH ${xIB3}|#SBATCH --gres=gpus:2|/g" | \
+  sed "s/:GPU:/|#SBATCH ${xGPU}|#SBATCH --gres=gpus:2|/g" | \
+  sed "s/:IB4:/|#SBATCH ${xIB4}|/g" | \
+  sed 's/[:]*ppn=/#SBATCH --cpus-per-task=1|#SBATCH --tasks-per-node=/g' | \
+  sed 's/-M[ ]*/--mail-user=/g' |
+  sed 's/-m[ ]*e/--mail-type=END/g' |
+  sed 's/-m[ ]*b/--mail-type=BEGIN/g' |
+  sed 's/-m[ ]*a`/--mail-type=FAIL/g' |
+  sed 's/-m[ ]*n/--mail-type=REQUEUE/g' |
+  sed 's/-N[ ]*/--job-name=/g' |
+  sed 's/^#SBATCH -o[ ]*/#SBATCH --output=/g' |
+  sed 's/ -e[ ]*/ --error=/g' |
+  sed 's/ -j[ ]*oe/ --error=error.out/g' |
+  sed "s/-q[ ]*debug/--partition=$STUBL_DEBUG_PARTITION/g" |
+  sed "s/-q[ ]*ccr/--partition=$STUBL_DEFAULT_PARTITION/g" |
+  sed "s/-q[ ]*gpu/--partition=${STUBL_GPGPU_PARTITION}|#SBATCH --gres=gpus:2/g" |
+  sed "s/:MEM[0-9].*GB[:]*/|#SBATCH --mem=$MEM|/g" | \
+  tr '|' '\n' |
+  sed 's/^#SBATCH/_SBATCH/g' | \
+  sed 's/#SBATCH/|#SBATCH/g' | \
+  sed 's/_SBATCH/#SBATCH/g' | \
+  tr '|' '\n' | \
+  sed 's/_LSMOR_/|/g' | \
+  sed '/^$/d'
+  if [ "$PMEM" != "" ]; then
+    echo "#SBATCH --mem=$PMEM"
+  fi  
+  # echo "#SBATCH --export=$MyExport"
+else
+   # handle join of output and error
+   joe=`grep "#PBS -j[ ]*oe" $1 | wc -l`
+   out=`grep "#PBS -o[ ]*" $1 | cut -c8-`
+   if [ "$joe" == "1" -a "$out" != "" ]; then
+     sed "s/#PBS -j[ ]*oe/#PBS -e $out/g" $1 | \
+     egrep '^#PBS' | xargs --replace -n1 pbs2sbatch  {} | grep -v '#SBATCH --export=NONE'
+   else
+     cat $1 | egrep '^#PBS' | xargs --replace -n1 pbs2sbatch  {} | grep -v '#SBATCH --export=NONE'
+   fi
+   echo "#SBATCH --export=$MyExport"
+fi
+
+
+

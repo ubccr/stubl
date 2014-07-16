@@ -1,0 +1,8 @@
+#!/bin/sh
+# -*- coding: utf-8 -*-
+# Author: Pär Andersson  (National Supercomputer Centre, Sweden)
+# Version: 0.2 2007-07-30
+#
+# Simple batch script that starts SCREEN.
+exec screen -Dm -S slurm$SLURM_JOB_ID
+

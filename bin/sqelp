@@ -1,0 +1,53 @@
+#!/bin/bash
+
+# =================================================
+# sqelp --- an squeue helper developed by Rob Leach
+# =================================================
+
+# =================================================
+# So I customized the output of squeue in an alias 
+# the other day and have experienced some infor-
+# mation overload.  So I numerically sorted the 
+# output and wrote a quick script to only print 
+# information in rows when it changes from job to 
+# job, otherwise if the information in a column is 
+# the same from row to row, it prints a double-quote.  
+# It also prints a full line every 32 rows (based on 
+# my preferred terminal height).  I find it's a lot 
+# easier to visually digest - for me anyway.  I 
+# thought I would share the alias & helper script 
+# (which is basically a perl-script-one-liner I 
+# saved in a file).  It'll work on whatever squeue 
+# command you use.
+# =================================================
+
+# determine STUBL install location
+if [ -z "$STUBL_HOME" -o ! -d "$STUBL_HOME" ] ; then
+  ## resolve links - $0 may be a link to stubl's home
+  PRG="$0"
+  progname=`basename "$0"`
+
+  # need this for relative symlinks
+  while [ -h "$PRG" ] ; do
+    ls=`ls -ld "$PRG"`
+    link=`expr "$ls" : '.*-> \(.*\)$'`
+    if expr "$link" : '/.*' > /dev/null; then
+    PRG="$link"
+    else
+    PRG=`dirname "$PRG"`"/$link"
+    fi
+  done
+
+  STUBL_HOME=`dirname "$PRG"`/..
+
+  # make it fully qualified
+  STUBL_HOME=`cd "$STUBL_HOME" > /dev/null && pwd`
+fi
+
+# setup STUBL environment
+. $STUBL_HOME/conf/stubl 
+
+SQELP=$STUBL_HOME/bin/squeue_helper.pl
+
+squeue -o "%.6i %.10B %.16P %.8u %.8a %.7m(M) %.4C %.10p %.8f %.19S %.11M %.2t %15j" "$@" | sort -n | $SQELP
+

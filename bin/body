@@ -1,0 +1,3 @@
+#!/bin/bash
+(read -r; printf "%s\n" "$REPLY"; "$@")
+

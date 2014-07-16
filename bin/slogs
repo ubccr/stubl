@@ -1,0 +1,91 @@
+#!/bin/bash
+
+# determine STUBL install location
+if [ -z "$STUBL_HOME" -o ! -d "$STUBL_HOME" ] ; then
+  ## resolve links - $0 may be a link to stubl's home
+  PRG="$0"
+  progname=`basename "$0"`
+
+  # need this for relative symlinks
+  while [ -h "$PRG" ] ; do
+    ls=`ls -ld "$PRG"`
+    link=`expr "$ls" : '.*-> \(.*\)$'`
+    if expr "$link" : '/.*' > /dev/null; then
+    PRG="$link"
+    else
+    PRG=`dirname "$PRG"`"/$link"
+    fi
+  done
+
+  STUBL_HOME=`dirname "$PRG"`/..
+
+  # make it fully qualified
+  STUBL_HOME=`cd "$STUBL_HOME" > /dev/null && pwd`
+fi
+
+# setup STUBL environment
+. $STUBL_HOME/conf/stubl 
+
+BODY=$STUBL_HOME/bin/body
+
+if [ "$1" == "--help" ]; then
+  echo "======================================================="
+  echo ""
+  echo "  slogs - A script that retrieves resource usage and   "
+  echo "  accounting information for a user or list of users.  "
+  echo "  For each job run after the given start date, the     "
+  echo "  following information is gathered from the SLURM     "
+  echo "  accounting logs:  " 
+  echo "     number of CPUS, start time, elapsed time, Amount  "
+  echo "     of RAM Requested, Avg RAM Used, and Max RAM Used  "
+  echo ""
+  echo "  Usage:  slogs [start_date] [users]"
+  echo ""
+  echo "  Notes: start_date should be in MMDDYY format.        "
+  echo "         Use a comma-separated list for multiple users."
+  echo ""
+  echo " Defaults:                                             "
+  echo "    start_date : 010113 if no start date is given.     "
+  echo ""
+  echo "    users : Current user if no user name is given.     "
+  echo ""
+  echo "======================================================="
+
+  exit
+fi
+
+if [ "$1" == "" ]; then
+  StartDate=010113
+else
+  StartDate=$1
+fi
+
+if [ "$2" == "" ]; then
+  TheGroup=`whoami`
+else
+  TheGroup=$2
+fi
+TheList=`echo "$TheGroup" | tr ',' ' '`
+
+EndDate=`date +%m%d%y`
+
+export SACCT_FORMAT="jobid,User,ncpus,start,elapsed,ReqMem,AveRSS,MaxRSS"
+
+TMPFILE=${TheGroup}_usage_logs_${StartDate}_to_${EndDate}.tmp
+OUTFILE=${TheGroup}_usage_logs_${StartDate}_to_${EndDate}.txt
+
+echo "JobID        User      NCPUS   Start Date Time          Elapsed     ReqMem    AveRSS     MaxRSS" > $TMPFILE
+for i in $TheList; do
+  echo "Retrieving accouning data for user $i ..."
+  sacct --start=${StartDate} --user=$i | \
+   grep 'K' | \
+   sed "s/\.bat+/ $i/g" | \
+   sed "s/\.[0-9]*/& $i/g" | \
+   sed "s/T/ /g" | \
+   awk '{ printf("%-12s %-8s  %5s   %10s %8s   %10s   %8s  %8s   %8s\n", $1, $2, $3, $4, $5, $6, $7, $8, $9); }' \
+   >> $TMPFILE
+done
+
+cat $TMPFILE | $BODY sort -k1 -V | tee $OUTFILE
+rm $TMPFILE
+

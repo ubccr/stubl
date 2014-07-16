@@ -1,0 +1,234 @@
+#!/bin/bash
+
+# determine STUBL install location
+if [ -z "$STUBL_HOME" -o ! -d "$STUBL_HOME" ] ; then
+  ## resolve links - $0 may be a link to stubl's home
+  PRG="$0"
+  progname=`basename "$0"`
+
+  # need this for relative symlinks
+  while [ -h "$PRG" ] ; do
+    ls=`ls -ld "$PRG"`
+    link=`expr "$ls" : '.*-> \(.*\)$'`
+    if expr "$link" : '/.*' > /dev/null; then
+    PRG="$link"
+    else
+    PRG=`dirname "$PRG"`"/$link"
+    fi
+  done
+
+  STUBL_HOME=`dirname "$PRG"`/..
+
+  # make it fully qualified
+  STUBL_HOME=`cd "$STUBL_HOME" > /dev/null && pwd`
+fi
+
+# setup STUBL environment
+. $STUBL_HOME/conf/stubl
+
+SNODES=$STUBL_HOME/bin/snodes
+
+IDLE=$STUBL_TMP_DIR/idle_nodes.$$
+MIXD=$STUBL_TMP_DIR/mix_nodes.$$
+
+if [ "$1" == "--help" ]; then
+  echo "==================================================="
+  echo ""
+  echo "  slurmbf - a script that emulates the output of the "
+  echo "  PBS \"showbf -S\" command."
+  echo ""
+  echo "  Usage:  slurmbf [partition] [--quick]"
+  echo ""
+  echo "  Note: partition defaults to $STUBL_DEFAULT_PARTITION if none"
+  echo "  specified on command line."
+  echo ""
+  echo " The \"--quick\" option will omit the Disk and Swap "
+  echo " fields in the interest of speeding up the script."
+  echo ""
+  echo " Set the SLURMBF_TOLERANCE environment variable to "
+  echo " adjust the backfill tolerance --- jobs that will  "
+  echo " be scheduled to occur within the value of the     "
+  echo " tolerance (in seconds) are considered as being"
+  echo " scheduled \"immediately\" and these resources will"
+  echo " be included in the backfill report. Default value "
+  echo " is 10 seconds, which is also the minimum value.   "
+  echo " The maximum value is 3600 seconds (1 hour).       "
+  echo "==================================================="
+  exit
+fi
+
+if [ "$SLURMBF_TOLERANCE" == "" ]; then
+  SLURMBF_TOLERANCE=10
+fi
+
+if [ "$SLURMBF_TOLERANCE" -lt "10" ]; then
+  SLURMBF_TOLERANCE=10
+fi
+
+if [ "$SLURMBF_TOLERANCE" -gt "3600" ]; then
+  SLURMBF_TOLERANCE=3600
+fi
+
+echo ""
+echo "Backfill Tolerance is $SLURMBF_TOLERANCE seconds"
+echo ""
+
+# a C program that assists with determining time available
+HELPER=$STUBL_HOME/bin/slurmbf_helper
+NODEINFO=$STUBL_HOME/log/NodeInfo.log
+
+bQuick=no
+if [ "$1" == "" ]; then
+  part=$STUBL_DEFAULT_PARTITION
+else
+  if [ "$1" == "--quick" ]; then
+    bQuick=yes
+    if [ "$2" == "" ]; then
+      part=$STUBL_DEFAULT_PARTITION
+    else
+      part=$2
+    fi
+  else
+    part=$1
+    if [ "$2" == "--quick" ]; then
+      bQuick=yes
+    fi
+  fi
+fi
+
+if [ "$part" == "all" ]; then
+  partList=`sinfo -h -o %R`
+else
+  partList=$part
+
+  if [ `sinfo -h -o %R | grep "^$part$" | wc -l` == "0" ]; then 
+    echo "Invalid partition argument ($part)!"
+    exit
+  fi
+fi
+
+for p in $partList; do
+  nAvail=0
+  if [ "$part" == "all" ]; then
+    echo "====================================================================="
+    echo "Partition = $p"
+    echo " "
+  fi
+
+  # determine upper bound on the partition's walltime
+  maxTime=`sinfo -h --partition=$p -o %l | \
+  sed 's/^[0-9]*:/0-&/g' | sed 's/-/ /g' | sed 's/:/ /g' | \
+  awk '{ printf("%d\n", $4+60*$3+60*60*$2+60*60*24*$1); }'`
+
+  $SNODES all $p idle | sed '1d' > $IDLE
+  idleNodes=`cat $IDLE | cut -d' ' -f1`
+
+  $SNODES all $p mix | sed '1d' > $MIXD
+  mixNodes=`cat $MIXD | cut -d' ' -f1`
+
+  if [ "$bQuick" == "no" ]; then
+    echo "   HostName    Procs  Mem(GB)  Disk(GB)  Swap(GB)  Time Available"
+    echo "   ----------  -----  -------  --------  --------  ------------------"
+  else
+    echo "   HostName    Procs  Mem(GB)  Time Available"
+    echo "   ----------  -----  -------  ------------------"
+  fi
+
+  if [ "$idleNodes" == "" -a "$mixNodes" == "" ]; then
+    echo "   No nodes are currently available for backfilling!!"
+  else
+    j=1
+    for i in $idleNodes; do
+
+      # determine availability
+      np=`sed -n "${j}p" $IDLE |  awk '{ print $3 }'`
+      # echo "$HELPER $i $part $maxTime $np $SLURMBF_TOLERANCE"
+      schTime=`$HELPER $i $p $maxTime $np $SLURMBF_TOLERANCE`
+
+      if [ "$schTime" != "UNAVAILABLE" ]; then
+        # hostname
+        echo $i | awk '{ printf("   %-10s", $1); }'
+
+        # extract num procs and memory
+        sed -n "${j}p" $IDLE |  awk '{ printf("  %5d  %7.1f  ", $3, $7/1000); }'
+
+        if [ "$bQuick" == "no" ]; then
+          #determine disk space in /scratch
+          disk=`(grep $i $NODEINFO | awk '{ print $2 }' && echo "unknown") | head -n1`
+          if [ $disk != "unknown" ]; then
+            echo $disk | awk '{ printf("%8d", $1/1E6);}'
+          else
+            echo $disk | awk '{ printf("%8s", $1);}'
+          fi
+
+          #determine swap space
+          swap=`(grep $i $NODEINFO | awk '{ print $3 }' && echo "unknown") | head -n1`
+          if [ $swap != "unknown" ]; then
+            echo $swap | awk '{ printf("  %8.1f  ", $1/1E6);}'
+          else
+            echo $swap | awk '{ printf("  %8s  ", $1);}'
+          fi
+        fi
+        echo "$schTime"
+        nAvail=`expr $nAvail + 1`
+      #else
+      #  echo $i | awk '{ printf("   %-10s", $1); }'
+      #  echo "$HELPER $i $p $maxTime $np $SLURMBF_TOLERANCE = $schTime"
+      fi
+
+      j=`expr $j + 1`
+    done
+
+    j=1
+    for i in $mixNodes; do
+      # extract num procs and memory
+      maxnp=`sed -n "${j}p" $MIXD | awk '{ print $3 }'`
+      np=`sed -n "${j}p" $MIXD | awk '{ print $5 }' | cut -d'/' -f2`
+      mem=`sed -n "${j}p" $MIXD |  awk '{ print $7 }'`
+
+      # determine availability
+      # echo "$HELPER $i $part $maxTime $np $SLURMBF_TOLERANCE"
+      if [ "$np" == "0" ]; then
+        schTime="UNAVAILABLE"
+      else
+        schTime=`$HELPER $i $p $maxTime $np $SLURMBF_TOLERANCE`
+      fi
+
+      if [ "$schTime" != "UNAVAILABLE" ]; then
+        # hostname
+        echo $i | awk '{ printf("   %-10s", $1); }'
+
+        echo "$np $mem $maxnp" | awk '{ printf("  %5d  %7.1f  ", $1, ($2*$1)/($3*1000)); }'
+
+        if [ "$bQuick" == "no" ]; then
+          #determine disk space in /scratch
+          disk=`(grep $i $NODEINFO | awk '{ print $2 }' && echo "unknown") | head -n1`
+          if [ $disk != "unknown" ]; then
+            echo "$np $maxnp $disk" | awk '{ printf("%8d", ($1*$3)/($2*1E6));}'
+          else
+            echo $disk | awk '{ printf("%8s", $1);}'
+          fi
+
+          #determine swap space
+          swap=`(grep $i $NODEINFO | awk '{ print $3 }' && echo "unknown") | head -n1`
+          if [ $swap != "unknown" ]; then
+            echo "$np $maxnp $swap" | awk '{ printf("  %8.1f  ", ($3*$1)/($2*1E6));}'
+          else
+            echo $swap | awk '{ printf("  %8s  ", $1);}'
+          fi
+        fi
+        echo "$schTime"
+        nAvail=`expr $nAvail + 1`
+      fi
+      j=`expr $j + 1`
+    done
+    if [ "$nAvail" == "0" ]; then
+      echo "   No nodes are currently available for backfilling!"
+#    else
+#      echo "nAvail = $nAvail"
+    fi
+  fi
+  rm -f $IDLE
+  rm -f $MIXD
+done
+

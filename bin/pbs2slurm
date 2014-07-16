@@ -1,0 +1,68 @@
+#!/bin/bash
+
+# determine STUBL install location
+if [ -z "$STUBL_HOME" -o ! -d "$STUBL_HOME" ] ; then
+  ## resolve links - $0 may be a link to stubl's home
+  PRG="$0"
+  progname=`basename "$0"`
+
+  # need this for relative symlinks
+  while [ -h "$PRG" ] ; do
+    ls=`ls -ld "$PRG"`
+    link=`expr "$ls" : '.*-> \(.*\)$'`
+    if expr "$link" : '/.*' > /dev/null; then
+    PRG="$link"
+    else
+    PRG=`dirname "$PRG"`"/$link"
+    fi
+  done
+
+  STUBL_HOME=`dirname "$PRG"`/..
+
+  # make it fully qualified
+  STUBL_HOME=`cd "$STUBL_HOME" > /dev/null && pwd`
+fi
+
+# setup STUBL environment
+. $STUBL_HOME/conf/stubl 
+
+if [ "$1" == "" -o "$2" == "" ]; then
+  echo "==============================================="
+  echo "   pbs2slurm "
+  echo "      Convert a pbs script to slurm equivalent."
+  echo " "
+  echo "   Usage:"
+  echo "      pbs2slurm [pbs_script] [slurm_script] "
+  echo " "
+  echo " Notes: Only converts directives and environ-  "
+  echo " ment variables. Does not replace mpirun, ssh, "
+  echo " and other task launchers with srun.           "
+  echo "==============================================="
+  exit
+fi
+
+# preserve front matter (the stuff before PBS directives)
+nFront=`grep -n -m 1 "#PBS" $1 | cut -d':' -f1`
+nFront=`expr $nFront - 1`
+head -n $nFront $1 > $2
+
+# use pbs2sbatch to convert the directives
+$STUBL_HOME/bin/pbs2sbatch $1 | sort -u >> $2
+
+# convert env. vars
+$STUBL_HOME/bin/pbsenv2slurm $1 $2.tmp >/dev/null
+
+# remove front matter
+sed -i "1,${nFront}d" $2.tmp
+
+# append converted script
+cat $2.tmp >> $2
+
+# remove PBS directives
+sed -i '/^#PBS/d' $2
+
+rm -f $2.tmp
+
+cat $2
+
+

@@ -1,0 +1,29 @@
+#!/bin/bash
+
+# =====================================================
+# STUBL = SLURM Tools and UBiLities
+#
+# Configuration variables for the STUBL environment
+# Match to your system or leave blank.
+# 
+#   GPGPU = general purpose graphics processing units
+#
+#   PEAK_TFLOPS = peak teraflops on system
+#
+#   STUBL_SQSTAT_EXCLUDES = a regular expression passed
+#   to "egrep -v" that excludes the listed partitions
+#   from node accounting in sqstat. Prevents "double" 
+#   counting when nodes have membership in multiple 
+#   partitions.
+# =====================================================
+export STUBL_DEFAULT_CLUSTER=tux
+export STUBL_DEFAULT_PARTITION=compute
+export STUBL_DEBUG_PARTITION=debug
+export STUBL_GPGPU_PARTITION=gpu
+export STUBL_SQSTAT_EXCLUDES="^$"
+export STUBL_TMP_DIR=/tmp
+export STUBL_SCRATCH_DIR=/scratch
+export STUBL_SCANCEL=/usr/bin/scancel
+export STUBL_PEAK_TFLOPS=999
+export STUBL_SLURM_CONF=/etc/slurm/slurm.conf
+export STUBL_SLURM_STATE_DIR=/tmp

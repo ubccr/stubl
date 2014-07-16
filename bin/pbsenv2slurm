@@ -1,0 +1,47 @@
+#!/bin/bash
+
+# ==========================================================================
+# this script will replace PBS environment variables with SLURM equivalents.
+# ==========================================================================
+
+if [ ! -f "$1" ]; then
+  echo "File not found ($1)"
+  exit
+fi
+
+if [ "$2" == "" ]; then
+  echo "No output file was provided. Using tmp.$$"
+  outfile=tmp.$$
+else
+  outfile=$2
+fi
+
+pbsVars=(PBS_O_WORKDIR PBSTMPDIR PBS_NODEFILE)
+slurmVars=(SLURM_SUBMIT_DIR SLURMTMPDIR SLURM_NODEFILE)
+nVars=${#pbsVars[@]}
+# insert creation of SLURM_NODEFILE
+if [ `grep SLURM_NODEFILE $1 | wc -l` == "0" ]; then
+  n=`grep -n '#[PS]B[SA]' $1 | tail -n1 | cut -d':' -f1`
+  n=`expr $n + 1`
+  sed "${n}isrun hostname | sort > \$SLURM_NODEFILE" $1 > $outfile
+  sed -i "${n}iSLURM_NODEFILE=my_slurm_nodes.\$\$" $outfile
+  sed -i "${n}i#construct nodefile" $outfile
+  sed -i '/^#construct nodefile$/{x;p;x;}' $outfile
+fi
+
+# insert on-the-fly creation of SLURM_SUBMIT_DIR
+#if [ `grep SLURM_SUBMIT_DIR $1 | wc -l` == "0" ]; then
+#  n=`grep -n '#[PS]B[SA]' $1 | tail -n1 | cut -d':' -f1`
+#  n=`expr $n + 1`
+#  sed -i "${n}iif [ \"\$SLURM_SUBMIT_DIR\" == \"\" ]; then export SLURM_SUBMIT_DIR=\`pwd\`; fi" $outfile
+#  sed -i "${n}i#recreate submit dir if not assigned" $outfile
+#  sed -i '/^#recreate submit dir if not assigned$/{x;p;x;}' $outfile
+#fi
+
+for ((i=0; i < $nVars; i++)); do
+  sed -i "s/${pbsVars[${i}]}/${slurmVars[${i}]}/g" $outfile
+done
+
+cat $outfile
+
+

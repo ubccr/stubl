@@ -1,0 +1,76 @@
+#!/bin/bash
+
+# determine STUBL install location
+if [ -z "$STUBL_HOME" -o ! -d "$STUBL_HOME" ] ; then
+  ## resolve links - $0 may be a link to stubl's home
+  PRG="$0"
+  progname=`basename "$0"`
+
+  # need this for relative symlinks
+  while [ -h "$PRG" ] ; do
+    ls=`ls -ld "$PRG"`
+    link=`expr "$ls" : '.*-> \(.*\)$'`
+    if expr "$link" : '/.*' > /dev/null; then
+    PRG="$link"
+    else
+    PRG=`dirname "$PRG"`"/$link"
+    fi
+  done
+
+  STUBL_HOME=`dirname "$PRG"`/..
+
+  # make it fully qualified
+  STUBL_HOME=`cd "$STUBL_HOME" > /dev/null && pwd`
+fi
+
+# setup STUBL environment
+. $STUBL_HOME/conf/stubl
+
+if [ "$1" == "--help" ]; then
+  echo "============================================"
+  echo "yasqr --- yet Another Squeue Replacement"
+  echo " "
+  echo "  Fixes problems with node counts reported"
+  echo "  by squeue for pending jobs."
+  echo " "
+  echo "  Usage is identical to squeue."
+  echo "============================================"
+else
+   YASQR=$STUBL_TMP_DIR/yasqr.$$
+   squeue $@ > $YASQR
+   iStatus=`head -n1 $YASQR | awk '{ for(i=1;i<=NF;i++){if($i == "ST") { print i } } }'`
+   iNodes=`head -n1 $YASQR | awk '{ for(i=1;i<=NF;i++){if($i == "NODES") { print i } } }'`
+   iJob=`head -n1 $YASQR | awk '{ for(i=1;i<=NF;i++){if($i == "JOBID") { print i } } }'`
+   iReason=`head -n1 $YASQR | awk '{ for(i=1;i<=NF;i++){if($i == "NODELIST(REASON)") { print i } } }'`
+   widths=( `head -n1 $YASQR | sed 's/ /_/g' | sed 's/\([A-Z]\)_/\1 /g' | awk '{ for(i=1; i<=NF; i++) { printf("%d ", length($i)); } }'` )
+
+   # in case user output doesn't contain status or nodes line
+   if [ "$iStatus" == "" -o "$iNodes" == "" -o "$iJob" == "" ]; then
+      cat $YASQR
+   else
+     cat $YASQR | awk -v iS=$iStatus -v iN=$iNodes -v iJ=$iJob -v iW="${widths[*]}" -v iR=$iReason\
+       '{ \
+          split(iW,w," "); 
+          if($iS != "PD") \
+          { \
+            print $0 \
+          } \
+          else \
+          { \
+             cmd="scontrol show job " $iJ " | grep NumNodes | cut -d'=' -f2 | cut -d'N' -f1 | cut -d'-' -f1"; \
+             cmd | getline nnodes; \
+             close(cmd); \
+             for(i=1;i<=NF;i++) \
+             { \
+               if(i==iN) { printf("%" w[i] "." w[i] "s", nnodes); } \
+               else if(i==iR){ printf("%-s",  $i ); } \
+               else { printf("%" w[i] "." w[i] "s",  $i ); } \
+               if(i != NF) printf(" "); \
+             } \
+             printf("\n"); \
+          }\
+       }'
+   fi
+   rm -f $YASQR
+fi
+

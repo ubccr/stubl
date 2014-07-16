@@ -1,0 +1,118 @@
+#!/bin/bash
+
+# determine STUBL install location
+if [ -z "$STUBL_HOME" -o ! -d "$STUBL_HOME" ] ; then
+  ## resolve links - $0 may be a link to stubl's home
+  PRG="$0"
+  progname=`basename "$0"`
+
+  # need this for relative symlinks
+  while [ -h "$PRG" ] ; do
+    ls=`ls -ld "$PRG"`
+    link=`expr "$ls" : '.*-> \(.*\)$'`
+    if expr "$link" : '/.*' > /dev/null; then
+    PRG="$link"
+    else
+    PRG=`dirname "$PRG"`"/$link"
+    fi
+  done
+
+  STUBL_HOME=`dirname "$PRG"`/..
+
+  # make it fully qualified
+  STUBL_HOME=`cd "$STUBL_HOME" > /dev/null && pwd`
+fi
+
+# setup STUBL environment
+. $STUBL_HOME/conf/stubl
+
+cArg=`echo $@ | tr ' ' '\n' | grep '\-\-clusters'`
+
+arg1=`echo $@ | tr ' ' '\n' | grep '\-\-raw'`
+if [ "$arg1" == "" ]; then
+  arg1=`echo $@ | tr ' ' '\n' | grep '\-\-full'`
+fi
+
+echo "RANK  USER      JOBID   PRIORITY   ____COMPONENTS_OF_TOTAL_PRIORITY_____"
+echo "====  ========  ======  ========    AGE   FSHARE  JOBSIZ  PARTITION  QOS"
+
+# ---------------------------------------------------------------------------
+# raw ranks don't take into account scheduler configuration, just priorities.
+# ---------------------------------------------------------------------------
+if [ "$arg1" == "--raw" ]; then
+  sprio $cArg -h -o "%u %i %Y %A %F %J %P %Q" | grep -v "^CLUSTER" |
+        sort -gr -k3 | 
+        awk '{ printf("%4d  %-8s  %-6s  %8s  %6s  %6s  %6s  %9s  %3s\n", NR-1, $1,$2,$3,$4,$5,$6,$7,$8); }' 
+# ---------------------------------------------------------------------------
+# The "full" pending option will include all jobs in the displayed list but 
+# will mark those not considered by the scheduler.
+# ---------------------------------------------------------------------------
+elif [ "$arg1" == "--full" ]; then
+  TMPFILE=$STUBL_TMP_DIR/sranks.$$
+  UNRFILE=$STUBL_TMP_DIR/unrank.$$
+  OUTFILE=$STUBL_TMP_DIR/outfil.$$
+
+  JOBS_PER_USER=`cat $STUBL_SLURM_CONF | \
+               grep 'SchedulerParameters=' | \
+               sed 's/SchedulerParameters=//g' | \
+               tr ',' '\n' | \
+               grep 'bf_max_job_user' | \
+               cut -d'=' -f2`
+
+  userList=`sprio $cArg -h -o "%u" | grep -v "^CLUSTER" | sort -u | tr '\n' ' '`
+
+  rm -f $TMPFILE
+
+  sprio $cArg -h -o "%u %i %Y %A %F %J %P %Q" | grep -v "^CLUSTER" | sort -gr -k3 > $UNRFILE
+
+  for i in $userList; do
+    grep $i $UNRFILE | head -n${JOBS_PER_USER} >> $TMPFILE
+  done
+
+  # assemble ranked jobs
+  if [ -f $TMPFILE ]; then
+    cat $TMPFILE |
+      sort -gr -k3 |
+      awk '{ printf("%4d  %-8s  %-6s  %8s  %6s  %6s  %6s  %9s  %3s\n", NR-1, $1,$2,$3,$4,$5,$6, $7,$8); }' > $OUTFILE
+
+    # tack on unranked jobs
+    grep -v -x -f $TMPFILE $UNRFILE |
+      awk '{ printf("----  %-8s  %-6s  %8s  %6s  %6s  %6s  %9s  %3s\n", $1,$2,$3,$4,$5,$6,$7,$8); }' >> $OUTFILE
+
+    # display sorted results
+    cat $OUTFILE | sort -k4rg,4 -k3rg,1
+  fi
+  rm -f $OUTFILE
+  rm -f $TMPFILE
+  rm -f $UNRFILE
+# ---------------------------------------------------------------------------
+# Default behavior is to only display the top jobs of each user. They are the
+# only ones considered by the scheduler.
+#----------------------------------------------------------------------------
+else
+  TMPFILE=$STUBL_TMP_DIR/sranks.$$
+
+  JOBS_PER_USER=`cat $STUBL_SLURM_CONF | \
+               grep 'SchedulerParameters=' | \
+               sed 's/SchedulerParameters=//g' | \
+               tr ',' '\n' | \
+               grep 'bf_max_job_user' | \
+               cut -d'=' -f2`
+
+  userList=`sprio $cArg -h -o "%u" | grep -v "^CLUSTER" | sort -u | tr '\n' ' '`
+
+  rm -f $TMPFILE
+
+  for i in $userList; do
+    sprio $cArg -h --user=$i -o "%u %i %Y %A %F %J %P %Q" | grep -v "^CLUSTER" | sort -gr -k3 | head -n${JOBS_PER_USER} >> $TMPFILE
+  done
+
+  if [ -f $TMPFILE ]; then
+    cat $TMPFILE |
+      sort -gr -k3 |
+      awk '{ printf("%4d  %-8s  %-6s  %8s  %6s  %6s  %6s  %9s  %3s\n", NR-1, $1,$2,$3,$4,$5,$6, $7,$8); }' 
+  fi
+
+  rm -f $TMPFILE
+fi
+

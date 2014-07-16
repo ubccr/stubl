@@ -1,0 +1,18 @@
+#!/bin/sh
+# -*- coding: utf-8 -*-
+# Author: Pär Andersson  (National Supercomputer Centre, Sweden)
+# Version: 0.3 2007-07-30
+#
+SCREENSESSION=$1
+
+# If DISPLAY is set then set that in the screen, then create a new
+# window with that environment and kill the old one.
+if [ "$DISPLAY" != "" ];then
+    screen -S $SCREENSESSION -X unsetenv DISPLAY
+    screen -p0 -S $SCREENSESSION -X setenv DISPLAY $DISPLAY
+    screen -p0 -S $SCREENSESSION -X screen
+    screen -p0 -S $SCREENSESSION -X kill
+fi
+
+exec screen -S $SCREENSESSION -rd 
+

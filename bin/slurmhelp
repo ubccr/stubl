@@ -1,0 +1,224 @@
+#!/bin/bash
+
+echo "
+   Summary of SLURM Commands
+   =========================================
+   Man pages exist for all SLURM daemons, 
+   commands, and API functions. The command 
+   option --help also provides a brief 
+   summary of options. Note that the command 
+   options are all case insensitive.
+   =========================================
+
+   sacct 
+      sacct is used to report job or job 
+      step accounting information about 
+      active or completed jobs.
+
+   salloc
+      salloc is used to allocate resources 
+      for a job in real time. Typically 
+      this is used to allocate resources 
+      and spawn an interactive shell. The 
+      shell is then used to execute srun 
+      commands to launch parallel tasks.
+
+   sattach
+      sattach is used to attach standard 
+      input, output, and error plus signal 
+      capabilities to a currently running 
+      job or job step. One can attach to 
+      and detach from jobs multiple times.
+
+   sbatch
+      sbatch is used to submit a job script 
+      for later execution. The script will 
+      typically contain one or more srun 
+      commands to launch parallel tasks. 
+      sbatch is analogous to the PBS qsub
+      command.
+
+   sbcast
+      sbcast is used to transfer a file from 
+      local disk to local disk on the nodes 
+      allocated to a job. This can be used 
+      to effectively use diskless compute 
+      nodes or provide improved performance 
+      relative to a shared file system.
+
+   scancel
+      scancel is used to cancel a pending or 
+      running job or job step. It can also 
+      be used to send an arbitrary signal to 
+      all processes associated with a running
+      job or job step. scancel is analogous 
+      to the PBS qdel command.
+
+   scontrol
+      scontrol is the administrative tool 
+      used to view and/or modify SLURM state. 
+      Note that many scontrol commands can 
+      only be executed by system admins.
+
+   sinfo
+      sinfo reports the state of partitions 
+      and nodes managed by SLURM. It has a 
+      wide variety of filtering, sorting, 
+      and formatting options.
+
+   smap
+      smap reports state information for 
+      jobs, partitions, and nodes managed 
+      by SLURM, but graphically displays 
+      the information to reflect network 
+      topology.
+
+   squeue
+      squeue reports the state of jobs or 
+      job steps. It has a wide variety of 
+      filtering, sorting, and formatting 
+      options. By default, it reports the 
+      running jobs in priority order and 
+      then the pending jobs in priority 
+      order. squeue is analogous to the PBS
+      qstat command.
+
+   srun
+      srun is used to submit a job for 
+      execution or initiate job steps in 
+      real time. srun has a wide variety 
+      of options to specify resource 
+      requirements, including: minimum and 
+      maximum node count, processor count, 
+      specific nodes to use or not use, and 
+      specific node characteristics (so much 
+      memory, disk space, certain required 
+      features, etc.). A job can contain 
+      multiple job steps executing 
+      sequentially or in parallel on 
+      independent or shared nodes within the 
+      job's node allocation.
+
+   strigger
+      strigger is used to set, get or view 
+      event triggers. Event triggers include 
+      things such as nodes going down or 
+      jobs approaching their time limit.
+
+   sview
+      sview is a graphical user interface 
+      to get and update state information 
+      for jobs, partitions, and nodes 
+      managed by SLURM.
+
+   Summary of SUTBL SLURM Commands
+   =========================================
+   These are commands added by UB CCR staff
+   and others as part of STUBL (SLURM Tools
+   and UBiLities). 
+   Many of these commands are designed to 
+   help users transition from PBS to SLURM.
+   =========================================
+   
+   pbs2sbatch
+      Converts PBS directives to equivalent
+      SLURM SBATCH directives. Accommodates
+      old UB CCR-specific PBS tags like IB1, 
+      IB2, etc.
+
+   pbs2slurm
+      A script that attempts to convert PBS
+      scripts into corresponding SBATCH 
+      scripts.  It will convert PBS 
+      directives as well as PBS environment
+      variables and will insert bash code to
+      create a SLURM_NODEFILE that is 
+      consistent with the PBS_NODEFILE.
+
+   slurmbf
+      Analogous to the PBS \"showbf -S\" 
+      command. 
+
+   snodes
+      A customized version of sinfo. Displays
+      node information in an easy-to-interpet
+      format. Filters can be applied to view
+      (1) specific nodes, (2) nodes in a 
+      specific partition, or (3) nodes in a
+      specifc state.
+
+   sqstat
+      A customized version of squeue that 
+      produces output analogous to the PBS
+      qstat and xqstat commands.
+
+   fisbatch
+      A customized version of sbatch that 
+      provides a user-friendly interface
+      to an interactive job with X11
+      forwarding enabled. It is analogous
+      to the PBS "qsub -I -X" command.
+
+   sranks 
+      A command that lists the overall 
+      priorities and associated priority 
+      components of queued jobs in ascending 
+      order. Top-ranked jobs will be given 
+      priority by the scheduler but lower 
+      ranked jobs may get slotted in first 
+      if they fit into the scheduler's 
+      backfill window.
+
+   sqelp
+      A customized version of squeue that
+      only prints a double-quote if the 
+      information in a column is the same from 
+      row to row. Some users find this type of
+      formatting easier to visually digest.
+
+   sjeff
+      Determines the efficiency of one or more
+      running jobs. Inefficient jobs are high-
+      lighted in red text.
+
+   sueff
+     Determines the overall efficiency of the
+     running jobs of one or more users. Users
+     that are inefficient are highlighted in 
+     red text.
+
+   yasqr
+      Yet Another Squeue Replacement. Fixes
+      squeue bugs in earlier versions of SLURM.
+
+   sgetscr
+      Retrieves the SLURM/SBATCH script and 
+      environment files for a job that is queued 
+      or running.
+
+   snacct
+      Retrieves SLURM accounting information for  
+      a given node and for a given period of time.
+
+   suacct
+      Retrieves SLURM accounting information for
+      a given user's jobs for a given period of 
+      time.
+
+   slist
+      Retrieves SLURM accounting and node 
+      information for a running or completed 
+      job.
+
+   slogs
+      Retrieves resource usage and accounting 
+      information for a user or list of users.  
+      For each job that was run after the given 
+      start date, the following information is 
+      gathered from the SLURM accounting logs:  
+         num CPUS, start time, elapsed time, 
+         Amount of RAM Requested, Average RAM 
+         Used and Max RAM Used" \
+| more
+
+

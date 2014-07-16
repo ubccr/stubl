@@ -1,0 +1,55 @@
+#!/bin/bash
+
+if [ "$1" == "--help" ]; then
+  echo "======================================================="
+  echo ""
+  echo "  suacct - a script that retrieves accounting "
+  echo "  information for a user's jobs going as far back      "
+  echo "  as start date.                                       "
+  echo ""
+  echo "  Usage:  suacct [start_date] [user_name] [--end] "
+  echo ""
+  echo "  Note: start_date should be in MMDDYY format.         "
+  echo ""
+  echo " Defaults:                                             "
+  echo "    Todays date if no start date is given.             "
+  echo "    User of script if no user name is given.           "
+  echo "    Job start times will be retrieved by default       "
+  echo "    unless the optional --end argument is provided.    "
+  echo ""
+  echo "======================================================="
+
+  exit
+fi
+
+if [ "$1" == "" -a "$1" != "--end" ]; then
+  dmy=`date +%m%d%y`
+else
+  dmy=$1
+fi
+
+if [ "$2" == "" -a "$1" != "--end" ]; then
+  usr=`whoami`
+else
+  usr=$2
+fi
+
+if [ "$1" == "--end" -o "$2" == "--end" -o "$3" == "--end" ]; then
+  bEnd=1
+fi
+
+#echo "User = $usr"
+#echo "Start Date = $dmy"
+
+# basic accounting information
+if [ "$bEnd" != "1" ]; then
+echo "JobID        User      Partition       NNodes NCPUS  Start               Elapsed      State      Priority   "
+echo "------------ --------- --------------- ------ ------ ------------------- ------------ ---------- -----------"
+sacct --starttime=$dmy --user=$usr --format=jobid%-12,user%-9,partition%-15,nnodes%-6,ncpus%-6,start%-19,elapsed%-12,state%-10,priority%-11 -X -n
+else
+echo "JobID        User      Partition       NNodes NCPUS  End                 Elapsed      State      Priority   "
+echo "------------ --------- --------------- ------ ------ ------------------- ------------ ---------- -----------"
+sacct --starttime=$dmy --user=$usr --format=jobid%-12,user%-9,partition%-15,nnodes%-6,ncpus%-6,end%-19,elapsed%-12,state%-10,priority%-11 -X -n
+fi
+
+

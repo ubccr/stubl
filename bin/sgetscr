@@ -1,0 +1,65 @@
+#!/bin/bash
+
+# determine STUBL install location
+if [ -z "$STUBL_HOME" -o ! -d "$STUBL_HOME" ] ; then
+  ## resolve links - $0 may be a link to stubl's home
+  PRG="$0"
+  progname=`basename "$0"`
+
+  # need this for relative symlinks
+  while [ -h "$PRG" ] ; do
+    ls=`ls -ld "$PRG"`
+    link=`expr "$ls" : '.*-> \(.*\)$'`
+    if expr "$link" : '/.*' > /dev/null; then
+    PRG="$link"
+    else
+    PRG=`dirname "$PRG"`"/$link"
+    fi
+  done
+
+  STUBL_HOME=`dirname "$PRG"`/..
+
+  # make it fully qualified
+  STUBL_HOME=`cd "$STUBL_HOME" > /dev/null && pwd`
+fi
+
+# setup STUBL environment
+. $STUBL_HOME/conf/stubl 
+
+jobId=$1
+
+if [ "$2" != "" ]; then
+  partition=$2
+else
+  partition="$STUBL_DEFAULT_PARTITION"
+fi
+
+if [ "$3" != "" ]; then
+  cluster=$3
+else
+  cluster="$STUBL_DEFAULT_CLUSTER"
+fi
+
+if [ "$jobId" == "" -o "$jobId" == "--help" ]; then
+  echo "Usage:"
+  echo "  sgetscr <job_id> [partition] [cluster]"
+  echo ""
+  echo "Retrieves the SLURM/SBATCH script and environment "
+  echo "files for a job that is queued or running."
+  echo ""
+  exit
+fi
+
+curState=`squeue --job=${jobId} --clusters=${cluster} --partition=${partition} -ho "%T" 2>/dev/null | tail -n1`
+
+# echo "curState = $curState"
+
+if [ "${curState}" != "PENDING" -a "${curState}" != "RUNNING" ]; then
+  echo "The job must be running or queued."
+  exit
+fi
+
+sudo cat $STUBL_SLURM_STATE_DIR/${cluster}/job.${jobId}/script > job_${jobId}_script.txt
+sudo cat $STUBL_SLURM_STATE_DIR/${cluster}/job.${jobId}/environment > job_${jobId}_environment.txt
+
+

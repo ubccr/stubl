@@ -1,0 +1,61 @@
+#!/bin/bash
+
+if [ "$1" == "--help" ]; then
+  echo "======================================================="
+  echo ""
+  echo "  snacct - a script that retrieves accounting "
+  echo "  information for a given node going as far back       "
+  echo "  as start date.                                       "
+  echo ""
+  echo "  Usage:  snacct [node] [start_date] [--end]  "
+  echo ""
+  echo "  Note: start_date should be in MMDDYY format.         "
+  echo ""
+  echo " Defaults:                                             "
+  echo "    Todays date if no start date is given.             "
+  echo "    Job start times will be retrieved by default       "
+  echo "    unless the optional --end argument is provided.    "
+  echo ""
+  echo "======================================================="
+
+  exit
+fi
+
+if [ "$1" == "" ]; then
+  echo "You must specify a node!"
+  exit
+fi
+
+node=$1
+
+nodeCheck=`host $node | grep "not found" | wc -l`
+if [ "$nodeCheck" == "1" ]; then
+  echo "Invalid node name ($node)!"
+  exit
+fi
+
+if [ "$2" == "" -a "$2" != "--end" ]; then
+  dmy=`date +%m%d%y`
+else
+  dmy=$2
+fi
+
+if [ "$2" == "--end" -o "$3" == "--end" ]; then
+  bEnd=1
+fi
+
+#echo "Node = $node"
+#echo "Start Date = $dmy"
+
+# basic accounting information
+if [ "$bEnd" != "1" ]; then
+echo "JobID        User      Partition       NNodes NCPUS  Start               Elapsed      State      Priority   "
+echo "------------ --------- --------------- ------ ------ ------------------- ------------ ---------- -----------"
+sacct --starttime=$dmy --node=$node --format=jobid%-12,user%-9,partition%-15,nnodes%-6,ncpus%-6,start%-19,elapsed%-12,state%-10,priority%-11 -X -n
+else
+echo "JobID        User      Partition       NNodes NCPUS  End                 Elapsed      State      Priority   "
+echo "------------ --------- --------------- ------ ------ ------------------- ------------ ---------- -----------"
+sacct --starttime=$dmy --node=$node --format=jobid%-12,user%-9,partition%-15,nnodes%-6,ncpus%-6,end%-19,elapsed%-12,state%-10,priority%-11 -X -n
+fi
+
+

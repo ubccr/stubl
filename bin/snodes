@@ -1,0 +1,94 @@
+#!/bin/bash
+
+# determine STUBL install location
+if [ -z "$STUBL_HOME" -o ! -d "$STUBL_HOME" ] ; then
+  ## resolve links - $0 may be a link to stubl's home
+  PRG="$0"
+  progname=`basename "$0"`
+
+  # need this for relative symlinks
+  while [ -h "$PRG" ] ; do
+    ls=`ls -ld "$PRG"`
+    link=`expr "$ls" : '.*-> \(.*\)$'`
+    if expr "$link" : '/.*' > /dev/null; then
+    PRG="$link"
+    else
+    PRG=`dirname "$PRG"`"/$link"
+    fi
+  done
+
+  STUBL_HOME=`dirname "$PRG"`/..
+
+  # make it fully qualified
+  STUBL_HOME=`cd "$STUBL_HOME" > /dev/null && pwd`
+fi
+
+# setup STUBL environment
+. $STUBL_HOME/conf/stubl 
+
+#scontrol show node `sinfo -N -h | cut -d' ' -f1`
+if [ "$1" == "--help" ]; then
+  echo "=============================================================="
+  echo "Display information about one or more nodes, possibly filtered"
+  echo "by partition and/or state."
+  echo ""
+  echo "If no node arg or 'all' is provided, all nodes will be "
+  echo "summarized. Similar behavior exists for the partition and "
+  echo "state(s) args"
+  echo ""
+  echo "Usage:   snodes [node1,node2,etc.] [cluster/partition] [state(s)]"
+  echo ""
+  echo "=============================================================="
+
+  exit
+fi
+
+if [ "$2" != "" ]; then
+  partition=`basename $2`
+  cluster=`dirname $2`
+
+  if [ "$cluster" == "." ]; then
+    cluster="$STUBL_DEFAULT_CLUSTER"
+  fi
+fi
+
+OPTIONS="--Node"
+
+if [ "$3" != "" -a "$3" != "all" -a "$3" != "mix" -a "$3" != "mixed" ]; then
+  OPTIONS="--states=$3 $OPTIONS"
+fi
+
+if [ "$2" != "" -a "$2" != "all" ]; then
+  if [ "$partition" == "all" ]; then
+    OPTIONS="--clusters=${cluster} $OPTIONS"
+  else
+    OPTIONS="--clusters=${cluster} --partition=${partition} $OPTIONS"
+  fi
+fi
+
+if [ "$1" != "" -a "$1" != "all" ]; then
+  OPTIONS="--node=$1 $OPTIONS"
+fi
+
+# echo "OPTIONS = $OPTIONS"
+
+# sinfo not working right when filtering on mixed/mix state
+# so use grep filter instead....
+if [ "$cluster" != "all" ]; then
+  if [ "$3" == "mix" -o "$3" == "mixed" ]; then
+    sinfo $OPTIONS -o "%10n %8t %4c %8z %15C %8O %8m %8G %18P %f" | grep -v "^CLUSTER" | head -n1
+    sinfo $OPTIONS -o "%10n %8t %4c %8z %15C %8O %8m %8G %18P %f" | grep -v "^CLUSTER" | grep 'mix'
+  else
+    sinfo $OPTIONS -o "%10n %8t %4c %8z %15C %8O %8m %8G %18P %f" | grep -v "^CLUSTER"
+  fi
+else
+  if [ "$3" == "mix" -o "$3" == "mixed" ]; then
+    sinfo $OPTIONS -o "%10n %8t %4c %8z %15C %8O %8m %8G %18P %f"  | head -n1
+    sinfo $OPTIONS -o "%10n %8t %4c %8z %15C %8O %8m %8G %18P %f"  | grep 'mix'
+  else
+    sinfo $OPTIONS -o "%10n %8t %4c %8z %15C %8O %8m %8G %18P %f" 
+  fi
+fi
+
+
+

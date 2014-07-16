@@ -1,0 +1,396 @@
+#!/bin/bash
+
+# determine STUBL install location
+if [ -z "$STUBL_HOME" -o ! -d "$STUBL_HOME" ] ; then
+  ## resolve links - $0 may be a link to stubl's home
+  PRG="$0"
+  progname=`basename "$0"`
+
+  # need this for relative symlinks
+  while [ -h "$PRG" ] ; do
+    ls=`ls -ld "$PRG"`
+    link=`expr "$ls" : '.*-> \(.*\)$'`
+    if expr "$link" : '/.*' > /dev/null; then
+    PRG="$link"
+    else
+    PRG=`dirname "$PRG"`"/$link"
+    fi
+  done
+
+  STUBL_HOME=`dirname "$PRG"`/..
+
+  # make it fully qualified
+  STUBL_HOME=`cd "$STUBL_HOME" > /dev/null && pwd`
+fi
+
+# setup STUBL environment
+. $STUBL_HOME/conf/stubl 
+
+# potentially shortened versions of the default and debug partitions
+DEFPART=`echo "$STUBL_DEFAULT_PARTITION" | awk '{ printf("%.9s", $1); }'`
+DBGPART=`echo "$STUBL_DEBUG_PARTITION" | awk '{ printf("%.9s", $1); }'`
+
+tstart=`date +%s`
+
+uArg=`echo $@ | tr ' ' '\n' | grep '\-\-user'`
+cArg=`echo $@ | tr ' ' '\n' | grep '\-\-clusters'`
+
+# templates for html pages
+tpl=$STUBL_HOME/template/sqstat_html.tpl
+ptpl=$STUBL_HOME/template/partition_html.tpl
+ctpl=$STUBL_HOME/template/coresum_html.tpl
+ntpl=$STUBL_HOME/template/nodesum_html.tpl
+
+# store a snapshot of system state in temp files
+tmp=$STUBL_TMP_DIR/xqstat.squeue.$$
+ndetmp=$STUBL_TMP_DIR/xqstat.nodes.$$
+cputmp=$STUBL_TMP_DIR/xqstat.cpus.$$
+mixtmp=$STUBL_TMP_DIR/xqstat.mix.$$
+sintmp=$STUBL_TMP_DIR/xqstat.sinfo.$$
+utmp=$STUBL_TMP_DIR/xqstat.users.$$
+htmltmp=$STUBL_TMP_DIR/xqstat.htmltmp.$$
+html=$STUBL_TMP_DIR/xqstat.html.$$
+tpltmp=$STUBL_TMP_DIR/xqstat.tpltmp.$$
+
+sinfo $cArg -h -o "%C" | \
+  grep -v "^CLUSTER" | \
+  grep -v "^$" | \
+  awk -F "/" '{ sum1+=$1;sum2+=$2;sum3+=$3;sum4+=$4;} END {print sum1,sum2,sum3,sum4}' | \
+  sed 's: :/:g' > $cputmp
+
+sinfo $cArg -h -o "%F" |
+  grep -v "^CLUSTER" | \
+  grep -v "^$" | \
+  awk -F "/" '{ sum1+=$1;sum2+=$2;sum3+=$3;sum4+=$4;} END {print sum1,sum2,sum3,sum4}' | \
+  sed 's: :/:g' > $ndetmp
+
+sinfo $cArg | grep ' mix ' | awk '{ print $6 }' | nodeset -c > $mixtmp
+sinfo $cArg -h -o "%N %P %C %A" | \
+   grep -v "^CLUSTER" | \
+   grep -v "^$" | \
+   egrep -v "$STUBL_SQSTAT_EXCLUDES" > $sintmp
+squeue $uArg $cArg -h -S i -o "%10i %10u %9P %12j %.5D %.5C %.6m %.13l %.2t %.13M  %15N" | grep -v "^CLUSTER" | grep -v "^$" | sed 's/ PD /  Q /g' > $tmp
+
+# job information for summary output
+activeJobs=`cat $tmp | grep ' R ' | wc -l`
+queuedJobs=`cat $tmp | grep ' Q ' | wc -l`
+totalJobs=`cat $tmp | wc -l`
+otherJobs=`expr $totalJobs - $activeJobs - $queuedJobs`
+
+# node information for summary output
+nodesTotal=`cat $ndetmp | cut -d'/' -f4`
+nodesUtilized=`cat $ndetmp | cut -d'/' -f1`
+nodesIdle=`cat $ndetmp | cut -d'/' -f2`
+nodesOther=`cat $ndetmp | cut -d'/' -f3`
+nodesPacked=`cat $mixtmp`
+nodesFull=`expr $nodesUtilized - $nodesPacked`
+
+# core information for summary output
+coresUtilized=`cat $cputmp | cut -d'/' -f1`
+coresTotal=`cat $cputmp | cut -d'/' -f4`
+pctUse=`echo "100 * $coresUtilized / $coresTotal" | bc -l`
+
+# display final results, but not if only a summary is requested
+if [ "$1" != "--html" -a "$1" != "--summary" ]; then
+  echo "JOBID      USER       PARTITION NAME         NODES  CPUS MEMORY      REQ_TIME ST      RUN_TIME  NODELIST"
+  cat $tmp
+fi
+
+if [ "`cat ${tmp}`" == "" ]; then
+  exit
+fi
+
+# display summary of job usage
+if [ "$1" == "--html" ]; then
+  p=`echo $pctUse | awk '{ printf("%6.3lf", $1); }'`
+  cat $tpl | sed "s/_DATE_/`date`/g" \
+           | sed "s/_MAXFLOPS_/$STUBL_PEAK_TFLOPS/g" \
+           | sed "s/_LOAD_/$p/g" \
+           | sed "s/_ACTIVEJOBS_/$activeJobs/g" \
+           | sed "s/_QUEUEDJOBS_/$queuedJobs/g" \
+           | sed "s/_NODESINUSE_/$nodesUtilized/g" \
+           | sed "s/_NODESTOTAL_/$nodesTotal/g" \
+           | sed "s/_CORESINUSE_/$coresUtilized/g" \
+           | sed "s/_CORESTOTAL_/$coresTotal/g" > $html
+
+  # locate line in html file where table entries should be inserted
+  r=`grep -n "JOB SUMMARY" $html | cut -d':' -f1`
+elif [ "$uArg" == "" ]; then
+  echo ""
+  echo "Peak (TFlop/s)  Status  Load     Active Jobs  Queued Jobs  Nodes Utilized  Processors Utilized"
+  echo "$STUBL_PEAK_TFLOPS UP $pctUse $activeJobs $queuedJobs $nodesUtilized $nodesTotal $coresUtilized $coresTotal" \
+  | awk '{ printf("%-14s  %-6s  %-6.3lf%%  %-11d  %-11d  %-3d of %-7d  %-4d of %-9d\n", \
+  $1, $2, $3, $4, $5, $6, $7, $8, $9); }'
+
+  echo ""
+  echo ""
+  echo "Partition   : Summary of current jobs"
+  echo "======================================================"
+else
+  echo ""
+  echo ""
+  echo "Partition   : Summary of current jobs"
+  echo "======================================================"
+fi
+
+gtot=0
+grun=0
+gque=0
+for partition in `cat $tmp | awk '{ print $3 }' | sort -u`; do
+  running=`cat $tmp | awk '{ print $3,$9 }' | grep $partition | grep ' R$' | wc -l`
+  queued=`cat $tmp | awk '{ print $3,$9 }' | grep $partition | grep ' Q$' | wc -l`
+  total=`expr $running + $queued`  
+  if [ "$1" == "--html" ]; then
+    # create table entry
+    cat $ptpl | sed "s/_PART_/$partition/g" \
+              | sed "s/_JRUN_/$running/g" \
+              | sed "s/_JQUE_/$queued/g" \
+              | sed "s/_JTOT_/$total/g" > $htmltmp
+    # insert table entry
+    sed "${r}r $htmltmp" $html > $tpltmp
+    cp $tpltmp $html
+    r=`expr $r + 1`
+  else    
+    echo "$partition $total $running $queued" | awk '{printf "%-11s : %4d jobs ( %4d running , %4d queued )\n", $1, $2, $3, $4}'
+  fi
+  gtot=`expr $total + $gtot`
+  grun=`expr $running + $grun`
+  gque=`expr $queued + $gque`
+done
+
+if [ "$1" == "--html" ]; then  
+  p1=`echo "100 * $grun / $gtot" | bc -l | awk '{printf "%0.1f", $1}'`
+  p2=`echo "100 - $p1" | bc -l | awk '{printf "%0.1f", $1}'`
+  cat $html | sed "s/_ALLJRUN_/$grun/g" \
+            | sed "s/_PCTJRUN_/$p1/g" \
+            | sed "s/_ALLJQUE_/$gque/g" \
+            | sed "s/_PCTJQUE_/$p2/g" \
+            | sed "s/_ALLJTOT_/$gtot/g" > $htmltmp
+  cp $htmltmp $html  
+else
+  echo "======================================================"
+  echo "$gtot $grun $gque" | awk '{printf "Grand Total : %4d jobs ( %4d running , %4d queued )\n", $1, $2, $3}'
+  echo ""
+  pct=`echo "100 * $grun / $gtot" | bc -l`
+  echo $pct | awk '{printf "Pct. Running : %5.1f %%\n", $pct}'
+  pct=`echo "100 - $pct" | bc -l`
+  echo $pct | awk '{printf "Pct. Queued  : %5.1f %%\n", $pct}'
+  echo ""
+  echo ""
+fi
+
+# display summary of core usage
+if [ "$1" != "--html" ]; then
+  if [ "$uArg" == "" ]; then  
+    echo "Partition   : Summary of current core usage"
+    echo "==============================================================="
+  fi
+else
+  # locate line in html file where table entries should be inserted
+  r=`grep -n "CORE SUMMARY" $html | cut -d':' -f1`
+fi
+
+gtot=0
+grun=0
+gidl=0
+goth=0
+for partition in `cat $sintmp | awk '{ print $2 }' | sort -u`; do
+  total=`cat $sintmp | awk '{print $2,$3}' | grep $partition | cut -d'/' -f4`
+  running=`cat $sintmp | awk '{print $2,$3}' | grep $partition | cut -d'/' -f1 | awk '{ print $2 }'`
+  idle=`cat $sintmp | awk '{print $2,$3}' | grep $partition | cut -d'/' -f2`
+  other=`cat $sintmp | awk '{print $2,$3}' | grep $partition | cut -d'/' -f3`
+  if [ "$1" == "--html" ]; then
+    # create table entry
+    cat $ctpl | sed "s/_PART_/$partition/g" \
+              | sed "s/_CRUN_/$running/g" \
+              | sed "s/_CIDL_/$idle/g" \
+              | sed "s/_COTH_/$other/g" \
+              | sed "s/_CTOT_/$total/g" > $htmltmp
+    # insert table entry
+    sed "${r}r $htmltmp" $html > $tpltmp
+    cp $tpltmp $html
+    r=`expr $r + 1`
+  elif [ "$uArg" == "" ]; then
+    echo "${partition:0:11} $total $running $idle $other" | awk '{printf "%-11s : %4d cores ( %4d in use, %4d idle, %4d other )\n", $1, $2, $3, $4, $5}'
+  fi
+  gtot=`expr $total + $gtot`
+  grun=`expr $running + $grun`
+  gidl=`expr $idle + $gidl`
+  goth=`expr $other + $goth`
+done
+
+if [ "$1" == "--html" ]; then
+  p1=`echo "100 * $grun / $gtot" | bc -l | awk '{printf("%0.1f", $1); }'`
+  p2=`echo "100 * $gidl / $gtot" | bc -l | awk '{printf("%0.1f", $1); }'`
+  cat $html | sed "s/_ALLCTOT_/$gtot/g" \
+            | sed "s/_ALLCUSE_/$grun/g" \
+            | sed "s/_PCTCUSE_/$p1/g" \
+            | sed "s/_ALLCUNU_/$gidl/g" \
+            | sed "s/_PCTCUNU_/$p2/g" \
+            | sed "s/_ALLCOTH_/$goth/g" > $htmltmp
+  cp $htmltmp $html  
+elif [ "$uArg" == "" ]; then
+  echo "==============================================================="
+  echo "$gtot $grun $gidl $goth" | awk '{printf "Grand Total : %4d cores ( %4d in use, %4d idle, %4d other )\n", $1, $2, $3, $4}'
+  echo ""
+  pct=`echo "100 * $grun / $gtot" | bc -l`
+  echo $pct | awk '{printf "Pct. In Use  : %5.1f %%\n", $pct}'
+  pct=`echo "100 * $gidl / $gtot" | bc -l`
+  echo $pct | awk '{printf "Pct. Unused  : %5.1f %%\n", $pct}'
+  echo ""
+  echo ""
+fi
+
+if [ "$1" != "--html" ]; then
+  if [ "$uArg" == "" ]; then
+    # display summary of node usage
+    echo "Partition   : Summary of current node usage"
+    echo "==================================================="
+  fi
+else
+  # locate line in html file where table entries should be inserted
+  r=`grep -n "NODE SUMMARY" $html | cut -d':' -f1`
+fi
+
+gtot=0
+grun=0
+for partition in `cat $sintmp | awk '{ print $2 }' | sort -u`; do
+  running=`cat $sintmp | awk '{print $2,$4}' | grep $partition | cut -d'/' -f1 | awk '{ print $2 }'`
+  idle=`cat $sintmp | awk '{print $2,$4}' | grep $partition | cut -d'/' -f2`
+  total=`expr $running + $idle`
+  if [ "$1" == "--html" ]; then
+    # create table entry
+    cat $ntpl | sed "s/_PART_/$partition/g" \
+              | sed "s/_NUSE_/$running/g" \
+              | sed "s/_NUNU_/$idle/g" > $htmltmp
+    # insert table entry
+    sed "${r}r $htmltmp" $html > $tpltmp
+    cp $tpltmp $html
+    r=`expr $r + 1`
+  elif [ "$uArg" == "" ]; then
+    echo "${partition:0:11} $total $running $idle" | awk '{printf "%-11s : %4d nodes ( %4d in use, %4d idle/down )\n", $1, $2, $3, $4}'
+  fi
+  gtot=`expr $total + $gtot`
+  grun=`expr $running + $grun`
+done
+
+if [ "$1" == "--html" ]; then
+  unused=`expr $gtot - $grun`
+  p1=`echo "100 * $grun / $gtot" | bc -l | awk '{printf("%0.1f", $1); }'`
+  p2=`echo "100 - $p1" | bc -l | awk '{printf("%0.1f", $1); }'`
+  cat $html | sed "s/_UNKNUSE_/0/g" \
+            | sed "s/_UNKNUNU_/0/g" \
+            | sed "s/_ALLNUSE_/$grun/g" \
+            | sed "s/_PCTNUSE_/$p1/g" \
+            | sed "s/_ALLNUNU_/$unused/g" \
+            | sed "s/_PCTNUNU_/$p2/g" > $htmltmp
+  cp $htmltmp $html  
+elif [ "$uArg" == "" ]; then
+  echo "==================================================="
+  unused=`expr $gtot - $grun`
+  echo "$gtot $grun $unused" | awk '{printf "Grand Total : %4d nodes ( %4d in use, %4d idle/down )\n", $1, $2, $3}'
+  echo ""
+  pct=`echo "100 * $grun / $gtot" | bc -l`
+  echo $pct | awk '{printf "Pct. In Use  : %5.1f %%\n", $pct}'
+  pct=`echo "100 - $pct" | bc -l`
+  echo $pct | awk '{printf "Pct. Unused  : %5.1f %%\n", $pct}'
+  echo ""
+  echo ""
+fi
+
+# generate sorted list of users and initialize related counters
+cat $tmp | grep ' [RQ] ' | sort -su -k2,2 | awk '{ print $2 }' | sort -u > $utmp
+nusers=`cat $utmp | wc -l`
+a=0
+b=0
+c=0
+d=0
+e=0
+f=0
+n1=0
+n2=0
+n3=0
+
+if [ "$1" != "--html" ]; then
+  if [ "$uArg" == "" ]; then
+    echo "Total number of users is $nusers"
+  fi
+else
+  cat $html
+  rm -f $html
+  rm -f $htmltmp
+fi
+
+if [ "$1" != "--summary" -a "$1" != "--html" ]; then
+echo "                      running   queued   running  queued  running  running  running  running"
+echo "username  total jobs   jobs      jobs     cores    cores   nodes   on dflt   on dbg  on other "
+echo "--------  ----------  -------   -------  -------  ------  -------  -------  -------  -------"
+for i in `cat $utmp`; do
+  jcount=`awk '{ print $2 }' $tmp | grep "$i" | wc -l`
+  jnumR=`awk '{ print $2,$9 }' $tmp | grep "^$i " | grep ' R$' | wc -l`
+  jnumQ=`awk '{ print $2,$9 }' $tmp | grep "^$i " | grep ' Q$' | wc -l`
+  pnumR=0
+  pnumQ=0
+  if [ "$jnumR" -gt "0" ]; then pnumR=`awk '{ print $2,$6,$9 }' $tmp | grep "^$i " | grep ' R$' | awk '{ SUM += $2} END { print SUM }'`; fi 
+  if [ "$jnumQ" -gt "0" ]; then pnumQ=`awk '{ print $2,$6,$9 }' $tmp | grep "^$i " | grep ' Q$' | awk '{ SUM += $2} END { print SUM }'`; fi 
+  nnumR=0
+  if [ "$jnumR" -gt "0" ]; then nnumR=`awk '{ print $2,$5,$9 }' $tmp | grep "^$i " | grep ' R$' | awk '{ SUM += $2} END { print SUM }'`; fi 
+
+  # count number of nodes allocated to user in default partition
+  ugnr=`awk -v usr="$i" -v defpart="$DEFPART" '{ if(($2==usr) && ($3==defpart) &&( $9=="R")) SUM += $5 } END { print SUM }' $tmp`
+  if [ "$ugnr" == "" ]; then ugnr=0; fi
+  # count number of nodes allocated to user in debug partition
+  udbg=`awk -v usr="$i" -v dbgpart="$DBGPART" '{ if(($2==usr) && ($3==dbgpart) && ($9=="R")) SUM += $5;} END { print SUM; }' $tmp`
+  if [ "$udbg" == "" ]; then udbg=0; fi
+  # count number of nodes allocated to user in remaining partitions
+  upi=`awk -v usr="$i" -v defpart="$DEFPART" -v dbgpart="$DBGPART" \
+     '{ if(($2==usr) && ($3!=dbgpart) && ($3!=defpart) && ($9=="R")) SUM += $5;} END { print SUM; }' $tmp`
+  if [ "$upi" == "" ]; then upi=0; fi
+
+  echo "$i $jcount $jnumR $jnumQ $pnumR $pnumQ $nnumR $ugnr $udbg $upi" | \
+  awk '{ printf "%8s  %10s  %7s  %7s  %7s  %7s  %7s  %7s  %7s  %7s\n", \
+  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10 }'
+
+  a=`expr $a + $jcount`
+  b=`expr $b + $jnumR`
+  c=`expr $c + $jnumQ`
+  d=`expr $d + $pnumR`
+  e=`expr $e + $pnumQ`
+  f=`expr $f + $nnumR`
+  n1=`expr $n1 + $ugnr`
+  n2=`expr $n2 + $udbg`
+  n3=`expr $n3 + $upi`
+done
+echo "======================================================================================================================="
+echo "Total $a $b $c $d $e $f $n1 $n2 $n3" | \
+awk '{ printf "%8s  %10s  %7s  %7s  %7s  %7s  %7s  %7s  %7s  %7s\n", \
+$1, $2, $3, $4, $5, $6, $7, $8, $9, $10 }'
+fi
+
+# clean up temp files
+if [ -f $tmp ]; then
+  rm -f $tmp
+fi
+if [ -f $utmp ]; then
+  rm -f $utmp
+fi
+if [ -f $ndetmp ]; then
+  rm -f $ndetmp
+fi
+if [ -f $cputmp ]; then
+  rm -f $cputmp
+fi
+if [ -f $mixtmp ]; then
+  rm -f $mixtmp
+fi
+if [ -f $sintmp ]; then
+  rm -f $sintmp
+fi
+if [ -f $tpltmp ]; then
+  rm -f $tpltmp
+fi
+tend=`date +%s`
+#echo "Elapsed time is `expr $tend - $tstart` seconds"
+
+
+

@@ -1,0 +1,88 @@
+#!/bin/bash
+
+if [ "$1" == "" ]; then
+  echo "========================================"
+  echo "sjeff (Check SLURM Job Efficiency)      "
+  echo " "
+  echo "  Computes the CPU efficiency of a run- "
+  echo "  ning job.                             "
+  echo " "
+  echo "  Note: calculation may be high if the  "
+  echo "  user has multiple jobs running on the "
+  echo "  same node.                            "
+  echo " "
+  echo "  Command Line Args:                    "
+  echo "    arg1 = jobid (or comma-separated    "
+  echo "    list of jobids or --all for all     "
+  echo "    running jobs.                       "
+  echo "========================================"
+  exit
+fi
+
+if [ "$1" == "--all" ]; then
+  jobList=`squeue -h --state='R' -o %A`
+else
+  jobList=`echo $1 | tr ',' ' '`
+fi
+
+#display header
+echo "Job_ID    Username  Efficiency  Number_of_CPUs_In_Use"
+
+for job in $jobList; do
+  jobInfo=`squeue -h --job=$job --state='R' 2>/dev/null`
+
+  if [ "$jobInfo" == "" -a "$1" != "--all" ]; then
+    echo "Invalid job ID ($job)"
+  else
+    user=`echo $jobInfo | awk '{ print $4 }'`
+    nodelist=`echo $jobInfo | awk '{ print $8 }'`
+    nodelist=`nodeset -e $nodelist | tr ' ' ','`
+
+    # how many cpus were requested for the job
+    ncpus=`squeue -h --job=$job -o %C`
+
+    # accumulate efficiency of each requested cpu
+    bStackedJobs=no
+    # echo "clush -w $nodelist \"ps -u $user -o pcpu= \""
+    effsum=`clush -w $nodelist -N "ps -u $user -o pcpu= " 2>/dev/null | awk '{ sum+=$1} END {print sum}'`
+    if [ "$effsum" == "" ]; then
+      effsum=0
+    fi
+    njobs=`squeue -h --nodes=$nodelist --user=$user -o %A | sort -u | wc -l`
+    if [ "$njobs" -gt "1" ]; then
+      bStackedJobs=yes
+    fi
+
+    # compute overall efficiency of the job
+    eff=`echo $effsum $ncpus | awk '{ printf("%0.2lf\n", $1/$2); }'`
+
+    # limit max efficiency
+    bIsMax=`echo "$eff > 100" | bc -l`
+    if [ "$bIsMax" == "1" ]; then
+      eff=100.00
+    fi
+  
+    # compute overall number of cpus in use
+    effcpu=`echo $eff $ncpus | awk '{ printf("%0.2lf\n", $1 * $2 / 100); }'`
+
+   # test for poor efficiency (<50%)
+    bRed=`echo "$eff < 50" | bc -l`
+    if [ "$bRed" == "0" ]; then    
+      # if jobs are stacked the calculated value might be an overestimate
+      if [ "$bStackedJobs" == "yes" ]; then
+        echo "$job $user $eff $effcpu $ncpus" | awk '{ printf("%-8s  %-8s  <= %-6s%%  (at most %s of %s)\n", $1, $2, $3, $4, $5); }'
+      else
+        echo "$job $user $eff $effcpu $ncpus" | awk '{ printf("%-8s  %-8s   = %-6s%%  (%s of %s)\n", $1, $2, $3, $4, $5); }'
+      fi
+    # highlight inefficient jobs
+    else
+# if jobs are stacked the calculated value might be an overestimate
+      if [ "$bStackedJobs" == "yes" ]; then
+        echo "$job $user $eff $effcpu $ncpus" | awk '{ printf("%c[0;31m%-8s  %-8s  <= %-6s%%  (at most %s of %s)\n%c[0m", 27, $1, $2, $3, $4, $5, 27); }'
+      else
+        echo "$job $user $eff $effcpu $ncpus" | awk '{ printf("%c[0;31m%-8s  %-8s   = %-6s%%  (%s of %s)\n%c[0m", 27, $1, $2, $3, $4, $5, 27); }'
+      fi
+    fi
+  fi
+done
+
