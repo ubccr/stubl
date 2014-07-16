@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# -------------------------------------------------
+# sqstat ---- mimics the output of qstat from PBS
+# -------------------------------------------------
+
 # determine STUBL install location
 if [ -z "$STUBL_HOME" -o ! -d "$STUBL_HOME" ] ; then
   ## resolve links - $0 may be a link to stubl's home
