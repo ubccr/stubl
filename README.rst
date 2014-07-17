@@ -9,7 +9,7 @@ STUBL is a collection of supplemental tools and utilitiy scripts for `SLURM
 INSTALL
 -----------
 
-- To install STUBL download the `latest release <https://github.com/ubccr/stubl/releases>_`::
+- To install STUBL download the `latest release <https://github.com/ubccr/stubl/releases>`_::
 
   $ tar xvf stubl-0.x.x.tar.gz
   $ cd stubl-0.x.x
