@@ -62,9 +62,10 @@ Summary of STUBL SLURM Commands
 
 - *fisbatch*
 
-  A customized version of sbatch that provides a user-friendly interface to an
-  interactive job with X11 forwarding enabled. It is analogous to the PBS "qsub
-  -I -X" command.
+  Friendly Interactive SBATCH. A customized version of sbatch that provides a
+  user-friendly interface to an interactive job with X11 forwarding enabled. It
+  is analogous to the PBS "qsub -I -X" command. This code was adopted from
+  `srun.x11 <https://github.com/jbornschein/srun.x11>`_.
 
 - *sranks*
 
