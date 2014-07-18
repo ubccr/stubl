@@ -23,6 +23,8 @@
 #
 
 # determine STUBL install location
+# Copied from Apache Ant:
+# https://git-wip-us.apache.org/repos/asf?p=ant.git;a=blob;f=src/script/ant;h=b5ed5be6a8fe3a08d26dea53ea0fb3f5fab45e3f
 if [ -z "$STUBL_HOME" -o ! -d "$STUBL_HOME" ] ; then
   ## resolve links - $0 may be a link to stubl's home
   PRG="$0"
