@@ -22,6 +22,20 @@
 #  FISBATCH = Friendly Interactive SBATCH
 #
 
+if [ "$1" == "--help" ]; then
+  echo " "
+  echo "========================================="
+  echo "fisbatch                                 "
+  echo " "
+  echo "   A Friendly Interactive SBATCH command."
+  echo " "
+  echo "   Usage:                                "
+  echo "      fisbatch [sbatch directives]       "
+  echo "========================================="
+  echo " "
+  exit
+fi
+
 # determine STUBL install location
 # Copied from Apache Ant:
 # https://git-wip-us.apache.org/repos/asf?p=ant.git;a=blob;f=src/script/ant;h=b5ed5be6a8fe3a08d26dea53ea0fb3f5fab45e3f

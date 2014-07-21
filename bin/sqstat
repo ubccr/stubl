@@ -32,6 +32,23 @@ fi
 # setup STUBL environment
 . $STUBL_HOME/conf/stubl 
 
+if [ "$1" == "--help" ]; then
+  echo " "
+  echo "==================================================================="
+  echo "sqstat                                                             "
+  echo " "
+  echo "    Format squeue results to look like the PBS qstat command.      "
+  echo " "
+  echo "    Usage:                            "
+  echo "      sqstat [--summary|html] [--clusters=cluster] [--user=user]   "
+  echo "         --summary : Just report a summary.                           "
+  echo "         --html    : Encode results into an html page.                "
+  echo " "
+  echo "==================================================================="
+  echo " "
+  exit
+fi
+
 # potentially shortened versions of the default and debug partitions
 DEFPART=`echo "$STUBL_DEFAULT_PARTITION" | awk '{ printf("%.9s", $1); }'`
 DBGPART=`echo "$STUBL_DEBUG_PARTITION" | awk '{ printf("%.9s", $1); }'`

@@ -28,6 +28,28 @@ fi
 # setup STUBL environment
 . $STUBL_HOME/conf/stubl
 
+if [ "$1" == "--help" ]; then
+  echo " "
+  echo "================================================"
+  echo "sranks                                          "
+  echo " "
+  echo "    Display the ranks of pending SLURM jobs.    "
+  echo " "
+  echo "    Usage:                                      "
+  echo "       sranks [--clusters=cluster] [--raw|full] "
+  echo " "
+  echo "          --raw : don't take into account       "
+  echo "                  scheduler configuration, just "
+  echo "                  priorities.                   "
+  echo " "
+  echo "         --full : display all pending jobs but  "
+  echo "                  mark those not considered by  "
+  echo "                  the scheduler.                "
+  echo "================================================"
+  echo " "
+  exit
+fi
+
 cArg=`echo $@ | tr ' ' '\n' | grep '\-\-clusters'`
 
 arg1=`echo $@ | tr ' ' '\n' | grep '\-\-raw'`
