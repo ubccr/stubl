@@ -16,13 +16,23 @@ INSTALL
 
 - Copy the sample config file and edit to taste::
 
-  $ cp  conf/stubl.sample conf/stubl
+  $ cp conf/stubl.sample conf/stubl
   $ vim conf/stulb
+
+- Create empty NodeInfo.log file::
+
+  $ cp log/NodeInfo.log.sample log/NodeInfo.log
 
 - (Optional) Build the slurmbf source::
 
   $ cd src/slurmbf
   $ make
+
+- (Optional) Populate slurmbf NodeInfo.log  with clusters node information
+  (RAM, disk size, scratch space, etc.). This will create a file log/NodeInfo.log
+  and can be done by running the following command (can take a while)::
+
+   $ ./bin/GetNodeInfo.sh
 
 - Ensure stubl is in your path::
 
@@ -47,7 +57,7 @@ Summary of STUBL SLURM Commands
 
 - *slurmbf*
 
-  Analogous to the PBS \"showbf -S\" command. 
+  Analogous to the PBS \"showbf -S\" command.
 
 - *snodes*
 
@@ -121,9 +131,12 @@ Summary of STUBL SLURM Commands
   users.  For each job that was run after the given start date, the following
   information is gathered from the SLURM accounting logs:  
 
-  - num CPUS, start time, elapsed time, 
-  - Amount of RAM Requested, Average RAM 
-  - Used and Max RAM Used
+  - Number of CPUS
+  - Start Time
+  - Elapsed Time
+  - Amount of RAM Requested
+  - Average RAM Used
+  - Max RAM Used
 
 ----------
 License
