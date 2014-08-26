@@ -1,6 +1,16 @@
 ChangeLog
 ===========
 
+v0.0.4
+----------------------
+
+- Updated install docs to include clush dependency
+
+v0.0.3
+----------------------
+
+- Updated install docs
+
 v0.0.2
 ----------------------
 

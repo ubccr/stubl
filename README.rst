@@ -5,9 +5,17 @@ STUBL - SLURM Tools and UBiLities
 STUBL is a collection of supplemental tools and utilitiy scripts for `SLURM
 <http://slurm.schedmd.com/>`_. 
 
------------
+-------------
+REQUIREMENTS
+-------------
+
+A few commands included in STUBL require `clush <http://cea-hpc.github.io/clustershell/>`_. 
+For rhel based systems clush is in `EPEL <https://fedoraproject.org/wiki/EPEL>`_. Debian 
+based systems can run *apt-get install clush*. 
+
+-------------
 INSTALL
------------
+-------------
 
 - To install STUBL download the `latest release <https://github.com/ubccr/stubl/releases>`_::
 
@@ -16,13 +24,23 @@ INSTALL
 
 - Copy the sample config file and edit to taste::
 
-  $ cp  conf/stubl.sample conf/stubl
+  $ cp conf/stubl.sample conf/stubl
   $ vim conf/stulb
+
+- Create empty NodeInfo.log file::
+
+  $ cp log/NodeInfo.log.sample log/NodeInfo.log
 
 - (Optional) Build the slurmbf source::
 
   $ cd src/slurmbf
   $ make
+
+- (Optional) Populate slurmbf NodeInfo.log  with clusters node information
+  (RAM, disk size, scratch space, etc.). This will create a file log/NodeInfo.log
+  and can be done by running the following command (can take a while)::
+
+   $ ./bin/GetNodeInfo.sh
 
 - Ensure stubl is in your path::
 
@@ -47,7 +65,7 @@ Summary of STUBL SLURM Commands
 
 - *slurmbf*
 
-  Analogous to the PBS \"showbf -S\" command. 
+  Analogous to the PBS \"showbf -S\" command.
 
 - *snodes*
 
@@ -58,14 +76,14 @@ Summary of STUBL SLURM Commands
 - *sqstat*
 
   A customized version of squeue that produces output analogous to the PBS
-  qstat and xqstat commands.
+  qstat and xqstat commands (requires clush).
 
 - *fisbatch*
 
   Friendly Interactive SBATCH. A customized version of sbatch that provides a
   user-friendly interface to an interactive job with X11 forwarding enabled. It
   is analogous to the PBS "qsub -I -X" command. This code was adopted from
-  `srun.x11 <https://github.com/jbornschein/srun.x11>`_.
+  `srun.x11 <https://github.com/jbornschein/srun.x11>`_. (requires clush)
 
 - *sranks*
 
@@ -83,12 +101,12 @@ Summary of STUBL SLURM Commands
 - *sjeff*
 
   Determines the efficiency of one or more running jobs. Inefficient jobs are
-  high- lighted in red text.
+  high- lighted in red text (requires clush).
 
 - *sueff*
 
   Determines the overall efficiency of the running jobs of one or more users.
-  Users that are inefficient are highlighted in red text.
+  Users that are inefficient are highlighted in red text (requires clush).
 
 - *yasqr*
 
@@ -113,7 +131,7 @@ Summary of STUBL SLURM Commands
 - *slist*
 
   Retrieves SLURM accounting and node information for a running or completed
-  job.
+  job (requires clush).
 
 - *slogs*
 
@@ -121,9 +139,12 @@ Summary of STUBL SLURM Commands
   users.  For each job that was run after the given start date, the following
   information is gathered from the SLURM accounting logs:  
 
-  - num CPUS, start time, elapsed time, 
-  - Amount of RAM Requested, Average RAM 
-  - Used and Max RAM Used
+  - Number of CPUS
+  - Start Time
+  - Elapsed Time
+  - Amount of RAM Requested
+  - Average RAM Used
+  - Max RAM Used
 
 ----------
 License
