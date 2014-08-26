@@ -146,6 +146,11 @@ Summary of STUBL SLURM Commands
   - Average RAM Used
   - Max RAM Used
 
+- *stimes*
+
+  Retrieves estimated starting times for queued jobs. All user-provided 
+  arguments are passed along to the squeue command.
+
 ----------
 License
 ----------
