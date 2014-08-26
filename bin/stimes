@@ -1,0 +1,88 @@
+#!/bin/bash
+
+# determine STUBL install location
+# Copied from Apache Ant:
+# https://git-wip-us.apache.org/repos/asf?p=ant.git;a=blob;f=src/script/ant;h=b5ed5be6a8fe3a08d26dea53ea0fb3f5fab45e3f
+if [ -z "$STUBL_HOME" -o ! -d "$STUBL_HOME" ] ; then
+  ## resolve links - $0 may be a link to stubl's home
+  PRG="$0"
+  progname=`basename "$0"`
+
+  # need this for relative symlinks
+  while [ -h "$PRG" ] ; do
+    ls=`ls -ld "$PRG"`
+    link=`expr "$ls" : '.*-> \(.*\)$'`
+    if expr "$link" : '/.*' > /dev/null; then
+    PRG="$link"
+    else
+    PRG=`dirname "$PRG"`"/$link"
+    fi
+  done
+
+  STUBL_HOME=`dirname "$PRG"`/..
+
+  # make it fully qualified
+  STUBL_HOME=`cd "$STUBL_HOME" > /dev/null && pwd`
+fi
+
+# setup STUBL environment
+. $STUBL_HOME/conf/stubl 
+
+if [ "$1" == "--help" ]; then
+  echo ""
+  echo "===================================================================="
+  echo "Usage:"
+  echo "  stimes [optional squeue args]"
+  echo ""
+  echo "Description:"
+  echo "  Retrieves estimated starting times for queued jobs."
+  echo "  All user-provided arguments are passed along to the squeue command."
+  echo "====================================================================="
+  echo " "
+  exit
+fi
+
+#
+# command to obtain memory requirements, which could be incorporated into the awk script
+# but makes the command much slower
+# "scontrol show job " $1 " | grep MinMemoryCPU | cut -d'=' -f3 | cut -d\" \" -f1" | getline ram
+#
+
+echo "JOBID       USER      PARTITION        JOB_NAME      REQUEST_TIME NODES  CPUS REASON_FOR_WAIT    PRIORITY   JOB_STARTS_IN"
+
+now=`date "+%s"`
+nrows=`stty -a | head -n1 | tr ';' '\n' | grep rows | awk '{ print $2 }'`
+nrows=`expr $nrows - 2`
+squeue -t PD -o "%.11i %.15P %.12j %.8u %.12l %.5D %C %R %p %S" -r -S -pi -h $@ | \
+awk -v now=$now -v nrows=$nrows '
+{split($10,st,"T"); 
+ if(st[1] != "N/A" ) 
+ {
+   "date --date=\"" st[1] " " st[2] "\" \"+%s\"" | getline t1
+   t2 = ( t1 - now ) / 60
+   units="minutes"
+   if( t2 > 60 )
+   {
+     t2 = ( t1 - now ) / ( 60 * 60 )
+     units="hours"
+
+     if( t2 > 24 )
+     {
+       t2 = ( t1 - now ) / ( 60 * 60 * 24 )
+       units="days"
+     }
+   }   
+   printf("%-11s %-8s  %-15s  %-12s  %12s %5s  %4s %-18s %8.2lf   %6.2lf %s\n", $1, $4, $2, $3, $5, $6, $7, $8, 100000*$9, t2, units);
+ } 
+ else
+ {
+   printf("%-11s %-8s  %-15s  %-12s  %12s %5s  %4s %-18s %8.2lf   undetermined\n", $1, $4, $2, $3, $5, $6, $7, $8, 100000*$9);
+ }
+ if ( ( NR % nrows ) == 0 )
+ {
+   printf("JOBID       USER      PARTITION        JOB_NAME      REQUEST_TIME NODES  CPUS REASON_FOR_WAIT    PRIORITY   JOB_STARTS_IN\n");
+ }
+}'
+
+
+
