@@ -123,7 +123,7 @@ JOB=`sbatch --export=$MyExport --job-name=FISBATCH --output=/dev/null --error=/d
 JOB=`echo $JOB | awk '{ printf("%d", $1 + 0); }'`
 
 # Make sure the job is always canceled
-trap "{ $STUBL_SCANCEL --clusters=$cluster --partition=$partition $JOB; exit; }" SIGINT SIGTERM EXIT
+trap "{ $STUBL_SCANCEL --clusters=$cluster --partition=$partition $JOB 2>/dev/null; exit; }" SIGINT SIGTERM EXIT
 
 echo "FISBATCH -- waiting for JOBID $JOB to start on cluster=$cluster and partition=$partition"
 while true; do
@@ -147,17 +147,31 @@ while true; do
     echo -n "."
 done
 
-# Determine the first node in the job:
+# Determine the head node in the job:
 #NODE=`srun --jobid=$JOB -N1 hostname`
+HNODE=""
+usr=`whoami`
 NODE=`squeue -h --clusters=${cluster} --partition=${partition} --jobs=${JOB} -o %N | grep -v "^CLUSTER"`
-NODE=`nodeset -e $NODE | awk '{ print $1 }'`
+NODE=`nodeset -e $NODE`
+for i in $NODE; do
+   if [ `ssh $i "ps -ef | grep $usr | grep [S]CREEN | wc -l"` != "0" ]; then
+      HNODE=$i
+      break
+   fi
+done
 
-echo "FISBATCH -- Connecting to head node ($NODE)"
+if [ "$HNODE" == "" ]; then
+  echo "Couldn't identify the head node - SCREEN not running on any node!"
+  echo "FISBATCH -- aborting job"
+  exit
+fi
+
+echo "FISBATCH -- Connecting to head node ($HNODE)"
 # a brief pause is needed?
 sleep 1s
 
 # SSH to the node and attach the screen
-ssh -X -t $NODE $IS slurm$JOB
+ssh -X -t $HNODE $IS slurm$JOB
 
 # The trap will now cancel the job before exiting.
 echo "FISBATCH -- exiting job"

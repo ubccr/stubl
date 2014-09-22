@@ -15,6 +15,18 @@ if [ "$1" == "" -o "$1" == "--help" ]; then
   echo "    arg1 = jobid (or comma-separated    "
   echo "    list of jobids or --all for all     "
   echo "    running jobs.                       "
+  echo " "
+  echo "  Environment Variables:                "
+  echo "    STUBL_SJEFF_PCPU=(ps|top)           "
+  echo " "
+  echo "      ps - use %cpu from ps command.    "
+  echo "           This is the average cpu use  "
+  echo "           over the life of the job.    "
+  echo " "
+  echo "     top - use %cpu from top command.   "
+  echo "           This is a 1 second snapshot  "
+  echo "           of cpu usage and reflects    "
+  echo "           current job behavior.        "
   echo "========================================"
   exit
 fi
@@ -44,7 +56,12 @@ for job in $jobList; do
     # accumulate efficiency of each requested cpu
     bStackedJobs=no
     # echo "clush -w $nodelist \"ps -u $user -o pcpu= \""
-    effsum=`clush -w $nodelist -N "ps -u $user -o pcpu= " 2>/dev/null | awk '{ sum+=$1} END {print sum}'`
+    if [ "$STUBL_SJEFF_PCPU" != "top" ]; then
+      effsum=`clush -w $nodelist -N "ps -u $user -o pcpu= " 2>/dev/null | awk '{ sum+=$1} END {print sum}'`
+    else
+      effsum=`clush -w $nodelist -N "top -b -u$user -n1 | grep $user" 2>/dev/null | awk '{ sum+=$9} END {print sum}'`
+    fi
+
     if [ "$effsum" == "" ]; then
       effsum=0
     fi

@@ -120,6 +120,13 @@ echo "
    help users transition from PBS to SLURM.
    =========================================
    
+   fisbatch
+      A customized version of sbatch that 
+      provides a user-friendly interface
+      to an interactive job with X11
+      forwarding enabled. It is analogous
+      to the PBS "qsub -I -X" command.
+
    pbs2sbatch
       Converts PBS directives to equivalent
       SLURM SBATCH directives. Accommodates
@@ -135,75 +142,15 @@ echo "
       create a SLURM_NODEFILE that is 
       consistent with the PBS_NODEFILE.
 
-   slurmbf
-      Analogous to the PBS \"showbf -S\" 
-      command. 
-
-   snodes
-      A customized version of sinfo. Displays
-      node information in an easy-to-interpet
-      format. Filters can be applied to view
-      (1) specific nodes, (2) nodes in a 
-      specific partition, or (3) nodes in a
-      specifc state.
-
-   sqstat
-      A customized version of squeue that 
-      produces output analogous to the PBS
-      qstat and xqstat commands.
-
-   fisbatch
-      A customized version of sbatch that 
-      provides a user-friendly interface
-      to an interactive job with X11
-      forwarding enabled. It is analogous
-      to the PBS "qsub -I -X" command.
-
-   sranks 
-      A command that lists the overall 
-      priorities and associated priority 
-      components of queued jobs in ascending 
-      order. Top-ranked jobs will be given 
-      priority by the scheduler but lower 
-      ranked jobs may get slotted in first 
-      if they fit into the scheduler's 
-      backfill window.
-
-   sqelp
-      A customized version of squeue that
-      only prints a double-quote if the 
-      information in a column is the same from 
-      row to row. Some users find this type of
-      formatting easier to visually digest.
-
-   sjeff
-      Determines the efficiency of one or more
-      running jobs. Inefficient jobs are high-
-      lighted in red text.
-
-   sueff
-     Determines the overall efficiency of the
-     running jobs of one or more users. Users
-     that are inefficient are highlighted in 
-     red text.
-
-   yasqr
-      Yet Another Squeue Replacement. Fixes
-      squeue bugs in earlier versions of SLURM.
-
-   sgetscr
+  sgetscr
       Retrieves the SLURM/SBATCH script and 
       environment files for a job that is queued 
       or running.
 
-   snacct
-      Retrieves SLURM accounting information for  
-      a given node and for a given period of time.
-
-   suacct
-      Retrieves SLURM accounting information for
-      a given user's jobs for a given period of 
-      time.
+   sjeff
+      Determines the efficiency of one or more
+      running jobs. Inefficient jobs are high-
+      lighted in red text. (see also sueff)
 
    slist
       Retrieves SLURM accounting and node 
@@ -218,7 +165,72 @@ echo "
       gathered from the SLURM accounting logs:  
          num CPUS, start time, elapsed time, 
          Amount of RAM Requested, Average RAM 
-         Used and Max RAM Used" \
+         Used and Max RAM Used
+
+   slurmbf
+      Analogous to the PBS \"showbf -S\" 
+      command. 
+
+   snacct
+      Retrieves SLURM accounting information for  
+      a given node and for a given period of time.
+      (see also suacct)
+
+   snodes
+      A customized version of sinfo. Displays
+      node information in an easy-to-interpet
+      format. Filters can be applied to view
+      (1) specific nodes, (2) nodes in a 
+      specific partition, or (3) nodes in a
+      specifc state.
+
+   spinfo
+      Show partition information for a cluster(s).
+      All arguments are passed along to the sinfo 
+      command. spinfo is an alias for:               
+        sinfo -h -a -o \"%8P %5a %.10l %.5D %6t\"
+
+   sqelp
+      A customized version of squeue that
+      only prints a double-quote if the 
+      information in a column is the same from 
+      row to row. Some users find this type of
+      formatting easier to visually digest.
+
+   sqstat
+      A customized version of squeue that 
+      produces output analogous to the PBS
+      qstat and xqstat commands.
+
+   sranks 
+      A command that lists the overall 
+      priorities and associated priority 
+      components of queued jobs in ascending 
+      order. Top-ranked jobs will be given 
+      priority by the scheduler but lower 
+      ranked jobs may get slotted in first 
+      if they fit into the scheduler's 
+      backfill window.
+
+   stimes
+      Retrieves estimated starting times for 
+      queued jobs. All user-provided arguments are 
+      passed along to the squeue command.
+
+   suacct
+      Retrieves SLURM accounting information for
+      a given user's jobs for a given period of 
+      time. (see also snacct)
+
+   sueff
+     Determines the overall efficiency of the
+     running jobs of one or more users. Users
+     that are inefficient are highlighted in 
+     red text. (see also sjeff)
+
+   yasqr
+      Yet Another Squeue Replacement. Fixes
+      squeue bugs in earlier versions of SLURM." \
 | more
 
 

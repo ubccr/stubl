@@ -1,0 +1,22 @@
+#!/bin/bash
+
+
+if [ "$1" == "--help" ]; then
+   echo "==============================================="
+   echo " "
+   echo " spinfo - show partition information.         "
+   echo "                                              "
+   echo "    usage: spinfo [args]                      "
+   echo "    All arguments are passed along to the     "
+   echo "    sinfo command. spinfo is an alias for the "
+   echo "    following sinfo invocation:               "
+   echo "    'sinfo -h -a -o \"%8P %5a %.10l %.5D %6t\""
+   echo " "
+   echo "==============================================="
+   exit
+fi
+
+echo "PARTITION_NAME   AVAIL TIMELIMIT  NODES STATE"
+sinfo -h -a -o "%16P %5a %.10l %.5D %6t" $@
+
+
