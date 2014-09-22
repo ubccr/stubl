@@ -1,6 +1,14 @@
 ChangeLog
 ===========
 
+v0.0.6
+----------------------
+
+- Added spinfo command.
+- Updated fisbatch command. It makes a better attempt to identify the head node.
+- Updated sjeff command. It can now report processor usage based on either ps or top.
+- Updated slurmhelp command. It now includes spinfo and stimes.
+
 v0.0.5
 ----------------------
 
