@@ -7,7 +7,7 @@ if [ "$1" == "--help" ]; then
   echo "  information for a user's jobs going as far back      "
   echo "  as start date.                                       "
   echo ""
-  echo "  Usage:  suacct [start_date] [user_name] [--end] "
+  echo "  Usage:  suacct [start_date] [user_name] [--end|submit] "
   echo ""
   echo "  Note: start_date should be in MMDDYY format.         "
   echo ""
@@ -15,41 +15,59 @@ if [ "$1" == "--help" ]; then
   echo "    Todays date if no start date is given.             "
   echo "    User of script if no user name is given.           "
   echo "    Job start times will be retrieved by default       "
-  echo "    unless the optional --end argument is provided.    "
+  echo "    unless the optional --end or --submit argument is  "
+  echo "    provided.    "
   echo ""
   echo "======================================================="
 
   exit
 fi
 
-if [ "$1" == "" -a "$1" != "--end" ]; then
+# try to determine if first argument is user or date
+if [ "$1" != "" -a "`id $1 2>/dev/null | wc -l`" == "1" ]; then
+  dol1=$2
+  dol2=$1
+else
+  dol1=$1
+  dol2=$2
+fi
+
+if [ "$dol1" == "" ]; then
   dmy=`date +%m%d%y`
 else
-  dmy=$1
+  dmy=$dol1
 fi
 
-if [ "$2" == "" -a "$1" != "--end" ]; then
+if [ "$dol2" == "" -a "$dol1" != "--end" -a "$dol1" != "--submit" ]; then
   usr=`whoami`
 else
-  usr=$2
+  usr=$dol2
 fi
 
-if [ "$1" == "--end" -o "$2" == "--end" -o "$3" == "--end" ]; then
+if [ "$dol1" == "--end" -o "$dol2" == "--end" -o "$3" == "--end" ]; then
   bEnd=1
+fi
+
+if [ "$dol1" == "--submit" -o "$dol2" == "--submit" -o "$3" == "--submit" ]; then
+  bSubmit=1
 fi
 
 #echo "User = $usr"
 #echo "Start Date = $dmy"
 
 # basic accounting information
-if [ "$bEnd" != "1" ]; then
+if [ "$bEnd" != "1" -a "$bSubmit" != "1" ]; then
 echo "JobID        User      Partition       NNodes NCPUS  Start               Elapsed      State      Priority   "
 echo "------------ --------- --------------- ------ ------ ------------------- ------------ ---------- -----------"
 sacct --starttime=$dmy --user=$usr --format=jobid%-12,user%-9,partition%-15,nnodes%-6,ncpus%-6,start%-19,elapsed%-12,state%-10,priority%-11 -X -n
-else
+elif [ "$bEnd" == "1" ]; then
 echo "JobID        User      Partition       NNodes NCPUS  End                 Elapsed      State      Priority   "
 echo "------------ --------- --------------- ------ ------ ------------------- ------------ ---------- -----------"
 sacct --starttime=$dmy --user=$usr --format=jobid%-12,user%-9,partition%-15,nnodes%-6,ncpus%-6,end%-19,elapsed%-12,state%-10,priority%-11 -X -n
+else
+echo "JobID        User      Partition       NNodes NCPUS  Submit              Elapsed      State      Priority   "
+echo "------------ --------- --------------- ------ ------ ------------------- ------------ ---------- -----------"
+sacct --starttime=$dmy --user=$usr --format=jobid%-12,user%-9,partition%-15,nnodes%-6,ncpus%-6,submit%-19,elapsed%-12,state%-10,priority%-11 -X -n
 fi
 
 

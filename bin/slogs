@@ -56,16 +56,25 @@ if [ "$1" == "--help" ]; then
   exit
 fi
 
-if [ "$1" == "" ]; then
-  StartDate=010113
+# try to figure out is users are in first or second arg
+if [ "$1" != "" -a "`echo $1 | tr ',' '\n' | head -n1 | xargs id 2>/dev/null | wc -l`" != 0 ]; then
+  dol1=$2
+  dol2=$1
 else
-  StartDate=$1
+  dol1=$1
+  dol2=$2
 fi
 
-if [ "$2" == "" ]; then
+if [ "$dol1" == "" ]; then
+  StartDate=010113
+else
+  StartDate=$dol1
+fi
+
+if [ "$dol2" == "" ]; then
   TheGroup=`whoami`
 else
-  TheGroup=$2
+  TheGroup=$dol2
 fi
 TheList=`echo "$TheGroup" | tr ',' ' '`
 

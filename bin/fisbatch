@@ -135,6 +135,7 @@ while true; do
     if [ "$STATUS" = "R" ];then
 	# Job is running, break the while loop
         echo "!"
+        sleep 1s
 	break
     elif [ "$STATUS" != "PD" ];then
         echo "!"

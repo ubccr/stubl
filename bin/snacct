@@ -21,12 +21,21 @@ if [ "$1" == "--help" ]; then
   exit
 fi
 
-if [ "$1" == "" ]; then
+# try to determine if 2nd argument is node or date
+if [ "$2" != "" -a "`ping -i 0.2 $2 -c 1 2>/dev/null | wc -l`" != "0" ]; then
+  dol1=$2
+  dol2=$1
+else
+  dol1=$1
+  dol2=$2
+fi
+
+if [ "$dol1" == "" ]; then
   echo "You must specify a node!"
   exit
 fi
 
-node=$1
+node=$dol1
 
 nodeCheck=`host $node | grep "not found" | wc -l`
 if [ "$nodeCheck" == "1" ]; then
@@ -34,13 +43,13 @@ if [ "$nodeCheck" == "1" ]; then
   exit
 fi
 
-if [ "$2" == "" -a "$2" != "--end" ]; then
+if [ "$dol2" == "" -a "$dol2" != "--end" ]; then
   dmy=`date +%m%d%y`
 else
-  dmy=$2
+  dmy=$dol2
 fi
 
-if [ "$2" == "--end" -o "$3" == "--end" ]; then
+if [ "$dol2" == "--end" -o "$3" == "--end" ]; then
   bEnd=1
 fi
 
