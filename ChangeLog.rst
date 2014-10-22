@@ -1,6 +1,11 @@
 ChangeLog
 ===========
 
+v0.0.7
+----------------------
+- Updated fisbatch command to delay a bit before connecting to screen.
+- Updated slogs, snacct and suacct commands to accept date as first OR second arg.
+
 v0.0.6
 ----------------------
 
