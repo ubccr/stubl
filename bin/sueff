@@ -11,6 +11,10 @@ if [ "$1" == "" -o "$1" == "--help" ]; then
   echo "    arg1 = userid (or comma-separated   "
   echo "    list of userids or --all for all    "
   echo "    users with currently active jobs.   "
+  echo " "
+  echo "    All other command line args will be "
+  echo "    passed along to SLURM.              "
+  echo "    (e.g. --clusters, --partition, etc.)"
   echo "========================================"
   exit
 fi
@@ -21,11 +25,13 @@ else
   userList=`echo $1 | tr ',' ' '`
 fi
 
+shift
+
 #display header
 echo "Username  Efficiency  Number_of_CPUs_In_Use"
 
 for user in $userList; do
-  nodelist=`squeue -h --state='R' --user=$user -o %N | sort -u | tr '\n' ' '`
+  nodelist=`squeue -h --state='R' --user=$user -o %N $@ | grep -v "CLUSTER" | sort -u | tr '\n' ' '`
 
   if [ "$nodelist" == ""  -a "$1" != "--all" ]; then
     echo "$user has no running jobs!"
@@ -33,7 +39,7 @@ for user in $userList; do
     nodelist=`nodeset -e $nodelist | tr ' ' ','`
 
     # how many cpus were requested for the users jobs
-    ncpus=`squeue -h --state='R' --user=$user -o %C | awk '{ SUM += $1;} END {print SUM }'`
+    ncpus=`squeue -h --state='R' --user=$user -o %C $@ | grep -v "CLUSTER" | awk '{ SUM += $1;} END {print SUM }'`
 
     # accumulate efficiency 
     effsum=`clush -w $nodelist -N "ps -u $user -o pcpu= " 2>/dev/null | awk 'BEGIN {sum=0} {sum+=$1} END {print sum}'`

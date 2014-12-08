@@ -119,7 +119,8 @@ fi
 # Submit the job and get the job id
 MyExport=SLURM_CPUS_PER_TASK,SLURM_JOB_NAME,SLURM_NTASKS_PER_NODE,SLURM_PRIO_PROCESS,SLURM_SUBMIT_DIR,SLURM_SUBMIT_HOST
 #JOB=`sbatch --export=$MyExport --job-name=FISBATCH --output=/dev/null --error=/dev/null $@ $BS 2>&1 | egrep -o -e "\b[0-9]+$"`
-JOB=`sbatch --export=$MyExport --job-name=FISBATCH --output=/dev/null --error=/dev/null $@ $BS 2>&1 | egrep -o -e "\b[0-9]+"`
+#JOB=`sbatch --export=$MyExport --job-name=FISBATCH --output=/dev/null --error=/dev/null $@ $BS 2>&1 | egrep -o -e "\b[0-9]+"`
+JOB=`sbatch --job-name=FISBATCH --output=/dev/null --error=/dev/null $@ $BS 2>&1 | egrep -o -e "\b[0-9]+"`
 JOB=`echo $JOB | awk '{ printf("%d", $1 + 0); }'`
 
 # Make sure the job is always canceled
@@ -155,7 +156,8 @@ usr=`whoami`
 NODE=`squeue -h --clusters=${cluster} --partition=${partition} --jobs=${JOB} -o %N | grep -v "^CLUSTER"`
 NODE=`nodeset -e $NODE`
 for i in $NODE; do
-   if [ `ssh $i "ps -ef | grep $usr | grep [S]CREEN | wc -l"` != "0" ]; then
+   screenTest=`ssh $i "ps -ef | grep $usr | grep [S]CREEN | wc -l"`
+   if [ "$screenTest" != "0" ]; then
       HNODE=$i
       break
    fi

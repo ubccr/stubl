@@ -38,13 +38,15 @@ if [ "$1" == "--help" ]; then
   echo "  For each job run after the given start date, the     "
   echo "  following information is gathered from the SLURM     "
   echo "  accounting logs:  " 
-  echo "     number of CPUS, start time, elapsed time, Amount  "
-  echo "     of RAM Requested, Avg RAM Used, and Max RAM Used  "
+  echo "     number of CPUS, wait time, start time, elapsed    "
+  echo "     time, Amount of RAM Requested, Avg RAM Used, and  "
+  echo "     Max RAM Used "
   echo ""
-  echo "  Usage:  slogs [start_date] [users]"
+  echo "  Usage:  slogs [start_date] [users] [sacct_args]      "
   echo ""
   echo "  Notes: start_date should be in MMDDYY format.        "
   echo "         Use a comma-separated list for multiple users."
+  echo "         All sacct_args passed along to sacct command. "
   echo ""
   echo " Defaults:                                             "
   echo "    start_date : 010113 if no start date is given.     "
@@ -56,7 +58,7 @@ if [ "$1" == "--help" ]; then
   exit
 fi
 
-# try to figure out is users are in first or second arg
+# try to figure out if users are in first or second arg
 if [ "$1" != "" -a "`echo $1 | tr ',' '\n' | head -n1 | xargs id 2>/dev/null | wc -l`" != 0 ]; then
   dol1=$2
   dol2=$1
@@ -65,35 +67,38 @@ else
   dol2=$2
 fi
 
-if [ "$dol1" == "" ]; then
+dol1Test=`echo $dol1 | grep '\--' | wc -l`
+if [ "$dol1" == "" -o "$dol1Test" == "1" ]; then
   StartDate=010113
 else
   StartDate=$dol1
+  shift
 fi
 
 if [ "$dol2" == "" ]; then
   TheGroup=`whoami`
 else
   TheGroup=$dol2
+  shift
 fi
 TheList=`echo "$TheGroup" | tr ',' ' '`
 
 EndDate=`date +%m%d%y`
 
-export SACCT_FORMAT="jobid,User,ncpus,start,elapsed,ReqMem,AveRSS,MaxRSS"
+export SACCT_FORMAT="jobid%20,User,ncpus,start,elapsed,ReqMem,AveRSS,MaxRSS"
 
 TMPFILE=${TheGroup}_usage_logs_${StartDate}_to_${EndDate}.tmp
 OUTFILE=${TheGroup}_usage_logs_${StartDate}_to_${EndDate}.txt
 
-echo "JobID        User      NCPUS   Start Date Time          Elapsed     ReqMem    AveRSS     MaxRSS" > $TMPFILE
+echo "JobID                User      NCPUS   Start Date Time         Elapsed     ReqMem    AveRSS     MaxRSS" > $TMPFILE
 for i in $TheList; do
   echo "Retrieving accouning data for user $i ..."
-  sacct --start=${StartDate} --user=$i | \
-   grep 'K' | \
-   sed "s/\.bat+/ $i/g" | \
-   sed "s/\.[0-9]*/& $i/g" | \
-   sed "s/T/ /g" | \
-   awk '{ printf("%-12s %-8s  %5s   %10s %8s   %10s   %8s  %8s   %8s\n", $1, $2, $3, $4, $5, $6, $7, $8, $9); }' \
+  sacct --start=${StartDate} --user=$i $@ | \
+  sed "s/$i//g" |
+  sed "s/T/ /g" | \
+  awk -vuser=$i '{ 
+         printf("%-20s %-8s  %5s   %10s %8s   %10s   %8s  %9s   %9s\n", $1, user, $2, $3, $4, $5, $6, $7, $8, $9);
+       }' \
    >> $TMPFILE
 done
 

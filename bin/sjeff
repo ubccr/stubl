@@ -16,6 +16,10 @@ if [ "$1" == "" -o "$1" == "--help" ]; then
   echo "    list of jobids or --all for all     "
   echo "    running jobs.                       "
   echo " "
+  echo "    All other command line arguments are"
+  echo "    passed along to SLURM. For example: "
+  echo "    --partition and/or --clusters       "
+  echo " "
   echo "  Environment Variables:                "
   echo "    STUBL_SJEFF_PCPU=(ps|top)           "
   echo " "
@@ -32,16 +36,19 @@ if [ "$1" == "" -o "$1" == "--help" ]; then
 fi
 
 if [ "$1" == "--all" ]; then
-  jobList=`squeue -h --state='R' -o %A`
+  jobList=`squeue -h $@ --state='R' -o %A | grep -v CLUSTER`
 else
   jobList=`echo $1 | tr ',' ' '`
 fi
+
+# pop first arg off list, all others passed on to SLURM commands
+shift
 
 #display header
 echo "Job_ID    Username  Efficiency  Number_of_CPUs_In_Use"
 
 for job in $jobList; do
-  jobInfo=`squeue -h --job=$job --state='R' 2>/dev/null`
+  jobInfo=`squeue -h $@ --job=$job --state='R' 2>/dev/null | grep -v CLUSTER`
 
   if [ "$jobInfo" == "" -a "$1" != "--all" ]; then
     echo "Invalid job ID ($job)"
@@ -51,7 +58,7 @@ for job in $jobList; do
     nodelist=`nodeset -e $nodelist | tr ' ' ','`
 
     # how many cpus were requested for the job
-    ncpus=`squeue -h --job=$job -o %C`
+    ncpus=`squeue -h $@ --job=$job -o %C | grep -v CLUSTER`
 
     # accumulate efficiency of each requested cpu
     bStackedJobs=no
@@ -65,7 +72,7 @@ for job in $jobList; do
     if [ "$effsum" == "" ]; then
       effsum=0
     fi
-    njobs=`squeue -h --nodes=$nodelist --user=$user -o %A | sort -u | wc -l`
+    njobs=`squeue -h $@ --nodes=$nodelist --user=$user -o %A | grep -v CLUSTER |sort -u | wc -l`
     if [ "$njobs" -gt "1" ]; then
       bStackedJobs=yes
     fi
