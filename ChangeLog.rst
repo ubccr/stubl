@@ -1,8 +1,17 @@
 ChangeLog
 ===========
 
+v0.0.8
+----------------------
+
+- fisbatch : removed --export option and check of screen test
+- sjeff, sueff, slogs : extra cmd line args passed along to slurm command
+- snodes : handle longer node names
+- added new logo to github page
+
 v0.0.7
 ----------------------
+
 - Updated fisbatch command to delay a bit before connecting to screen.
 - Updated slogs, snacct and suacct commands to accept date as first OR second arg.
 
