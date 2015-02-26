@@ -1,0 +1,22 @@
+#!/bin/bash
+
+if [ "$1" == "--help" ]; then
+  echo "======================================================="
+  echo ""
+  echo "  slimits - a script that retrieves job submission     "
+  echo "  limits for a given user.                             "
+  echo ""
+  echo "  Usage: slimits [user_id] "
+  echo "     Defaults to user running the command if no id given."
+  echo "======================================================="
+
+  exit
+fi
+
+if [ "$1" == "" ]; then
+  TheUser=`whoami`
+else
+  TheUser=$1
+fi
+
+sacctmgr show associations user=$TheUser

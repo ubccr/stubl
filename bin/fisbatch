@@ -156,7 +156,7 @@ usr=`whoami`
 NODE=`squeue -h --clusters=${cluster} --partition=${partition} --jobs=${JOB} -o %N | grep -v "^CLUSTER"`
 NODE=`nodeset -e $NODE`
 for i in $NODE; do
-   screenTest=`ssh $i "ps -ef | grep $usr | grep [S]CREEN | wc -l"`
+   screenTest=`ssh $i "ps -ef | grep $usr | grep \[S\]CREEN | wc -l"`
    if [ "$screenTest" != "0" ]; then
       HNODE=$i
       break

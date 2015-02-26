@@ -52,7 +52,7 @@ if [ "$1" == "--help" ]; then
   echo "    start_date : 010113 if no start date is given.     "
   echo ""
   echo "    users : Current user if no user name is given.     "
-  echo ""
+  echo "            \"all\" selects all users                  "
   echo "======================================================="
 
   exit
@@ -81,6 +81,15 @@ else
   TheGroup=$dol2
   shift
 fi
+
+if [ "$TheGroup" == "all" ]; then
+    TheGroup=`sacct --start=${StartDate} --allusers $@ -ouser -n | \
+             sort -u | \
+             sed 's/ //g' | \
+             tr '\n' ',' | \
+             sed 's/^,//g' | \
+             sed 's/,$//g'`
+fi
 TheList=`echo "$TheGroup" | tr ',' ' '`
 
 EndDate=`date +%m%d%y`
@@ -91,13 +100,14 @@ TMPFILE=${TheGroup}_usage_logs_${StartDate}_to_${EndDate}.tmp
 OUTFILE=${TheGroup}_usage_logs_${StartDate}_to_${EndDate}.txt
 
 echo "JobID                User      NCPUS   Start Date Time         Elapsed     ReqMem    AveRSS     MaxRSS" > $TMPFILE
+
 for i in $TheList; do
   echo "Retrieving accouning data for user $i ..."
   sacct --start=${StartDate} --user=$i $@ | \
   sed "s/$i//g" |
   sed "s/T/ /g" | \
   awk -vuser=$i '{ 
-         printf("%-20s %-8s  %5s   %10s %8s   %10s   %8s  %9s   %9s\n", $1, user, $2, $3, $4, $5, $6, $7, $8, $9);
+         printf("%-20s %-8s  %5s   %10s %8s   %10s   %8s  %9s   %9s\n", $1, user, $2, $3, $4, $5, $6, $7, $8);
        }' \
    >> $TMPFILE
 done
