@@ -1,6 +1,13 @@
 ChangeLog
 ===========
 
+v0.0.9
+----------------------
+
+- fisbatch : fixed bug in SCREEN detection for users of csh 
+- slogs : added support for "all" users
+- Added slimits command. It shows users SLURM accounting limits (max jobs, etc.).
+
 v0.0.8
 ----------------------
 

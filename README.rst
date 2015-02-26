@@ -82,6 +82,10 @@ Summary of STUBL SLURM Commands
   Determines the efficiency of one or more running jobs. Inefficient jobs are
   high- lighted in red text (requires clush).
 
+- *slimits*
+
+  Retrieves SLURM account limits (e.g. max number of jobs) for the specified user.
+
 - *slist*
 
   Retrieves SLURM accounting and node information for a running or completed
