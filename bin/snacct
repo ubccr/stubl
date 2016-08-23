@@ -21,21 +21,26 @@ if [ "$1" == "--help" ]; then
   exit
 fi
 
-# try to determine if 2nd argument is node or date
-if [ "$2" != "" -a "`ping -i 0.2 $2 -c 1 2>/dev/null | wc -l`" != "0" ]; then
-  dol1=$2
-  dol2=$1
-else
-  dol1=$1
-  dol2=$2
-fi
+# extract optional --end arg
+bEnd=`echo "$@" | grep '\--end' | wc -l`
+ARGS=( `echo "$@" | sed 's/--end//g'` )
 
-if [ "$dol1" == "" ]; then
+# extract node
+idx=0
+for i in ${ARGS[*]}; do
+  if [ "`ping -i 0.2 $i -c 1 2>/dev/null | wc -l`" != "0" ]; then
+    node=$i
+    ARGS[$idx]="_delete_me_"
+    ARGS=( `echo ${ARGS[*]} | sed 's/_delete_me_//g'` )
+    break
+  fi
+  idx=`expr $idx + 1`
+done
+
+if [ "$node" == "" ]; then
   echo "You must specify a node!"
   exit
 fi
-
-node=$dol1
 
 nodeCheck=`host $node | grep "not found" | wc -l`
 if [ "$nodeCheck" == "1" ]; then
@@ -43,28 +48,35 @@ if [ "$nodeCheck" == "1" ]; then
   exit
 fi
 
-if [ "$dol2" == "" -a "$dol2" != "--end" ]; then
-  dmy=`date +%m%d%y`
+mdy=${ARGS[0]}
+if [ "$mdy" == "" ]; then
+  mdy=`date +%m%d%y`
 else
-  dmy=$dol2
-fi
-
-if [ "$dol2" == "--end" -o "$3" == "--end" ]; then
-  bEnd=1
+  mm=${mdy:0:2}
+  dd=${mdy:2:2}
+  yy=${mdy:4:4}
+  bDate=`date -d $mm/$dd/$yy 2>/dev/null | wc -l`
+  if [ "$bDate" == "1" ]; then
+    ARGS[0]="_delete_me_"
+    ARGS=( `echo ${ARGS[*]} | sed 's/_delete_me_//g'` )
+  else
+    mdy=`date +%m%d%y`
+  fi
 fi
 
 #echo "Node = $node"
-#echo "Start Date = $dmy"
+#echo "Start Date = $mdy"
+#echo "ARGS = ${ARGS[*]}"
 
 # basic accounting information
 if [ "$bEnd" != "1" ]; then
 echo "JobID        User      Partition       NNodes NCPUS  Start               Elapsed      State      Priority   "
 echo "------------ --------- --------------- ------ ------ ------------------- ------------ ---------- -----------"
-sacct --starttime=$dmy --node=$node --format=jobid%-12,user%-9,partition%-15,nnodes%-6,ncpus%-6,start%-19,elapsed%-12,state%-10,priority%-11 -X -n
+sacct --starttime=$mdy --node=$node ${ARGS[*]} --format=jobid%-12,user%-9,partition%-15,nnodes%-6,ncpus%-6,start%-19,elapsed%-12,state%-10,priority%-11 -X -n
 else
 echo "JobID        User      Partition       NNodes NCPUS  End                 Elapsed      State      Priority   "
 echo "------------ --------- --------------- ------ ------ ------------------- ------------ ---------- -----------"
-sacct --starttime=$dmy --node=$node --format=jobid%-12,user%-9,partition%-15,nnodes%-6,ncpus%-6,end%-19,elapsed%-12,state%-10,priority%-11 -X -n
+sacct --starttime=$mdy --node=$node ${ARGS[*]} --format=jobid%-12,user%-9,partition%-15,nnodes%-6,ncpus%-6,end%-19,elapsed%-12,state%-10,priority%-11 -X -n
 fi
 
 

@@ -6,8 +6,9 @@ if [ "$1" == "--help" ]; then
   echo "  slimits - a script that retrieves job submission     "
   echo "  limits for a given user.                             "
   echo ""
-  echo "  Usage: slimits [user_id] "
+  echo "  Usage: slimits [user_id] [sacctmgr_options]"
   echo "     Defaults to user running the command if no id given."
+  echo "     Additional options are passed onto sacctmgr.      "
   echo "======================================================="
 
   exit
@@ -17,6 +18,107 @@ if [ "$1" == "" ]; then
   TheUser=`whoami`
 else
   TheUser=$1
+  shift
 fi
 
-sacctmgr show associations user=$TheUser
+# get list of all clusters
+# CLUSTERS=`sinfo -M all | grep CLUSTER: | awk '{ print $2 }' | tr '\n' ' '`
+
+# get parsable sacctmgr info
+echo -n "."
+SACCTFILE=/tmp/slimits.sacct.$$
+sacctmgr show associations user=$TheUser -n -p > $SACCTFILE
+
+# get parsable cluster partition info
+echo -n "."
+SINFOFILE=/tmp/slimits.sinfo.$$
+sinfo -M all --format=%R | tr '\n' ' ' | tr ':' '\n' | sed 's/ PARTITION /,PARTITION,/g' | sed 's/CLUSTER//g' | grep -v "^$" | sed 's/^[ ]*//g' | sed 's/[ ]*$//g'> $SINFOFILE
+
+# get list of users accounts, store as an array
+echo -n "."
+ACCOUNTS=( `cat $SACCTFILE | cut -d'|' -f2 | tr '\n' ' '` )
+
+# get list of clusters corresponding to accounts
+echo -n "."
+CLUSTERS=( `cat $SACCTFILE | cut -d'|' -f1 | tr '\n' ' '` )
+
+nQOS=20
+nDefQOS=20
+# ------------------------------------------------------------------------------------
+# assemble qos portion of the output by looping over each cluster-account combination
+# while we're at it keep track of the width required to display all results
+# ------------------------------------------------------------------------------------
+echo -n "."
+rm -f /tmp/slimits.bdy.$$
+for ((c=0; c < ${#CLUSTERS[@]}; c++ )); do 
+  cluster=${CLUSTERS[$c]}
+  account=${ACCOUNTS[$c]}
+
+  # echo " "
+  # echo "Cluster = $cluster , Account = $account"
+
+  # get list of qos entries for the user for the given cluster, pad them with '_' to prevent substring matches later in the script
+  echo -n "."
+  qosList=`cat $SACCTFILE | grep "^${cluster}|${account}|${TheUser}" | cut -d'|' -f17 | sed 's/,/_ _/g' | sed 's/^/_/g' | sed 's/$/_/g'`
+  # echo "qosList = $qosList"
+
+  # get list of partitions for the given cluster
+  echo -n "."
+  PARTITIONS=`cat $SINFOFILE | grep "^$cluster" | cut -d',' -f3 | sed 's/ /_ _/g' | sed 's/^/_/g' | sed 's/$/_/g'`
+
+  # add on supporters and any other non-partition qos entries
+  if [ "$cluster" == "ub-hpc" ]; then
+    PARTITIONS="$PARTITIONS _supporters_"
+  fi
+  # echo "PARTITIONS = $PARTITIONS"
+
+  # compare qosList against partitions list, retain a list of matches
+  qosMatch=""
+  for qos in $qosList; do
+    bQosIsPart=`echo $PARTITIONS | tr ' ' '\n' | grep $qos | wc -l`
+    if [ "$bQosIsPart" == "1" ]; then
+      qosMatch="$qosMatch,$qos"
+      qosLen=`echo $qos |  awk '{ print length($0) }'`
+      if [ "$qosLen" -gt "$nDefQOS" ]; then
+        nDefQOS=$qosLen
+      fi
+    fi
+  done
+  qosMatch=`echo "$qosMatch" | sed 's/^,//g' | sed 's/_//g' | sed 's/ //g'`
+  clusterQosLen=`echo $qosMatch |  awk '{ print length($0) }'`
+  if [ "$clusterQosLen" -gt "$nQOS" ]; then
+    nQOS=$clusterQosLen
+  fi
+
+  if [ "$qosMatch" == "" ]; then
+    echo "_NO_QOS_MATCH_" >> /tmp/slimits.bdy.$$
+  else
+    echo "$qosMatch" >> /tmp/slimits.bdy.$$
+  fi
+done
+
+# QOS header (see http://stackoverflow.com/questions/5349718/how-can-i-repeat-a-character-in-bash)
+echo -n "."
+printf "%-${nQOS}s\n" "QOS" > /tmp/slimits.qos.$$
+head -c $nQOS < /dev/zero | tr '\0' '-' >> /tmp/slimits.qos.$$
+echo ""  >> /tmp/slimits.qos.$$
+
+# combine qos header and body
+echo -n "."
+cat /tmp/slimits.bdy.$$ >> /tmp/slimits.qos.$$
+
+# assemble non-QOS portion
+echo -n "."
+if [ "`echo $@ | tr ' ' '\n' | grep 'format=' | wc -l`" == "0" ];then
+  sacctmgr show associations user=$TheUser $@ format=Cluster,Account%20,User,DefaultQOS%$nDefQOS > /tmp/slimits.$$
+else
+  sacctmgr show associations user=$TheUser $@ > /tmp/slimits.$$
+fi
+
+# combine results
+echo "!"
+paste /tmp/slimits.$$ /tmp/slimits.qos.$$ | grep -v "_NO_QOS_MATCH_"
+
+# cleanup temp files
+rm -f /tmp/slimits.$$ /tmp/slimits.qos.$$ /tmp/slimits.bdy.$$ $SACCTFILE $SINFOFILE
+

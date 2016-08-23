@@ -15,6 +15,17 @@
 #   from node accounting in sqstat. Prevents "double" 
 #   counting when nodes have membership in multiple 
 #   partitions.
+#
+#   STUBL_USER_EXCLUDE = the id of a user to exclude
+#   from sausage and scounts accounting
+#
+#   STUBL_PRESUM_FILE = path (relative to STUBL_HOME) to 
+#   a colon-separated list of accounts, cpu hours, and 
+#   jobs run that are not accounted for in the current 
+#   slurm database
+# 
+#   STUBL_JOBSCRIPT_ROOT_DIR = path to root dir where
+#   SLURM job scripts are saved
 # =====================================================
 export STUBL_DEFAULT_CLUSTER=tux
 export STUBL_DEFAULT_PARTITION=compute
@@ -27,3 +38,6 @@ export STUBL_SCANCEL=/usr/bin/scancel
 export STUBL_PEAK_TFLOPS=999
 export STUBL_SLURM_CONF=/etc/slurm/slurm.conf
 export STUBL_SLURM_STATE_DIR=/tmp
+export STUBL_USER_EXCLUDE=somebody
+export STUBL_PRESUM_FILE=bin/sausage_helpers/presum.txt
+export STUBL_JOBSCRIPT_ROOT_DIR=/scratch/jobscripts

@@ -47,7 +47,7 @@ LOGFILE=$STUBL_HOME/log/NodeInfo.log
 if [ "$1" == "" ]; then
   rm $LOGFILE
   echo "HOSTNAME   DISK(Kb)   SWAP(Kb)" | tee $LOGFILE 
-  for i in `snodes | grep -v down | grep -v drain | sed '1d' | awk '{ print $1;}'`; do
+  for i in `snodes | grep -v down | grep -v drain | sed '1d' | awk '{ print $1;}' | sort -u`; do
     echo -n "$i" | tee -a $LOGFILE
 
     #determine disk space in /scratch

@@ -57,17 +57,17 @@ fi
 
 # basic accounting information
 if [ "$bEnd" != "1" -a "$bSubmit" != "1" ]; then
-echo "JobID        User      Partition       NNodes NCPUS  Start               Elapsed      State      Priority   "
-echo "------------ --------- --------------- ------ ------ ------------------- ------------ ---------- -----------"
-sacct --starttime=$dmy --user=$usr --format=jobid%-12,user%-9,partition%-15,nnodes%-6,ncpus%-6,start%-19,elapsed%-12,state%-10,priority%-11 -X -n
+echo "JobID        User      Partition       NNodes NCPUS  Start               Elapsed      State                ExitCode Priority   "
+echo "------------ --------- --------------- ------ ------ ------------------- ------------ -------------------- -------- -----------"
+sacct -L --starttime=$dmy --user=$usr --format=jobid%-12,user%-9,partition%-15,nnodes%-6,ncpus%-6,start%-19,elapsed%-12,state%-20,derivedexitcode%8,priority%-11 -X -n
 elif [ "$bEnd" == "1" ]; then
-echo "JobID        User      Partition       NNodes NCPUS  End                 Elapsed      State      Priority   "
-echo "------------ --------- --------------- ------ ------ ------------------- ------------ ---------- -----------"
-sacct --starttime=$dmy --user=$usr --format=jobid%-12,user%-9,partition%-15,nnodes%-6,ncpus%-6,end%-19,elapsed%-12,state%-10,priority%-11 -X -n
+echo "JobID        User      Partition       NNodes NCPUS  End                 Elapsed      State                ExitCode Priority   "
+echo "------------ --------- --------------- ------ ------ ------------------- ------------ -------------------- -------- -----------"
+sacct -L --starttime=$dmy --user=$usr --format=jobid%-12,user%-9,partition%-15,nnodes%-6,ncpus%-6,end%-19,elapsed%-12,state%-20,derivedexitcode%8,priority%-11 -X -n
 else
-echo "JobID        User      Partition       NNodes NCPUS  Submit              Elapsed      State      Priority   "
-echo "------------ --------- --------------- ------ ------ ------------------- ------------ ---------- -----------"
-sacct --starttime=$dmy --user=$usr --format=jobid%-12,user%-9,partition%-15,nnodes%-6,ncpus%-6,submit%-19,elapsed%-12,state%-10,priority%-11 -X -n
+echo "JobID        User      Partition       NNodes NCPUS  Submit              Elapsed      State                ExitCode Priority   "
+echo "------------ --------- --------------- ------ ------ ------------------- ------------ -------------------- -------- -----------"
+sacct -L --starttime=$dmy --user=$usr --format=jobid%-12,user%-9,partition%-15,nnodes%-6,ncpus%-6,submit%-19,elapsed%-12,state%-20,derivedexitcode%8,priority%-11 -X -n
 fi
 
 

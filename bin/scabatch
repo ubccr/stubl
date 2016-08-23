@@ -1,0 +1,35 @@
+#!/bin/bash
+CLUSTERS="industry chemistry mae physics"
+echo "You asked for the following:"
+echo
+cat $@|grep SBATCH|grep nodes
+cat $@|grep SBATCH|grep mem
+cat $@|grep SBATCH|grep ntasks-per-node
+cat $@|grep SBATCH|grep constraint
+echo
+for i in $CLUSTERS; do
+  value=`sbatch --test-only -M $i -p scavenger $@ 2>&1` 
+  available=`snodes all $i/scavenger idle |sed "1 d"`
+  #echo "This is what is availabe = " $available
+  echo "Checking the $i cluster for appropriate node type...."
+  if [[ "$value" =  "allocation failure: Requested node configuration is not available" ]] || [[ "$value" = "allocation failure: Invalid partition name specified" ]] || [[ "$value" = "allocation failure: Invalid feature specification" ]]
+  then
+    echo
+    echo "SORRY - No appropriate nodes available on the $i cluster, but this is what is available:"
+    echo 
+    echo " # OF NODES | # CORES |  MEMORY (mb)  | TAGS"
+    echo "======================================================"
+    sinfo -M $i -p scavenger --states=idle --format="    %4D    |   %2Y    |    %7m    | %20f"|tail -n+3
+    echo
+  elif [[ "$available" == "" ]] 
+  then
+    echo "The $i cluster can support your job requirements"
+    echo "Now checking for available nodes on the $i cluster....."
+    #echo `snodes all $i/scavenger idle`
+    echo "No nodes are available on $i cluster"
+    echo 
+  else
+    sbatch -M $i -p scavenger $@  
+    break
+  fi
+  done

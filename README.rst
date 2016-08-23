@@ -38,6 +38,12 @@ INSTALL
   $ cd src/slurmbf
   $ make
 
+- (Optional) Build the slogs_helpers source::
+  $ cd bin/slogs_helpers
+  $ g++ -c *.c *.cpp
+  $ g++ -o tins tins.o
+  $ g++ -o slogplus slogplus.o
+
 - (Optional) Populate slurmbf NodeInfo.log  with clusters node information
   (RAM, disk size, scratch space, etc.). This will create a file log/NodeInfo.log
   and can be done by running the following command (can take a while)::
@@ -71,6 +77,15 @@ Summary of STUBL SLURM Commands
   scripts.  It will convert PBS directives as well as PBS environment variables
   and will insert bash code to create a SLURM_NODEFILE that is consistent with
   the PBS_NODEFILE.
+
+- *sausage*
+
+  Retrieves accounting/billing information for a user or account over some period
+  of time.
+
+- *scounts*
+
+  Computes the number of jobs completed by a user, group, or account.
 
 - *sgetscr*
 

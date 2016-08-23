@@ -43,7 +43,7 @@ fi
 
 # export=NONE is too agressive as it will clobber important SLURM
 # variables. Use this concoction istead.
-MyExport=SLURM_CPUS_PER_TASK,SLURM_JOB_NAME,SLURM_NTASKS_PER_NODE,SLURM_PRIO_PROCESS,SLURM_SUBMIT_DIR,SLURM_SUBMIT_HOST
+#MyExport=SLURM_CPUS_PER_TASK,SLURM_JOB_NAME,SLURM_NTASKS_PER_NODE,SLURM_PRIO_PROCESS,SLURM_SUBMIT_DIR,SLURM_SUBMIT_HOST
 
 # ======================================================
 # These variables are CCR-specific PBS-SLURM mappings.
@@ -89,6 +89,7 @@ echo $@ | sed 's/PBS/SBATCH/g' | \
   sed 's/:XEON//g' | \
   sed 's/-l[ ]*walltime/--time/g'   | \
   sed 's/-l[ ]*nodes/--nodes/g' | \
+  sed 's/-l[ ]*ncpus/--ntasks/g' | \
   sed "s/:IB1:/|#SBATCH ${xIB1}|/g" | \
   sed "s/:IB2:/|#SBATCH ${xIB2}|/g" | \
   sed "s/:IB3:/|#SBATCH ${xIB3}|#SBATCH --gres=gpus:2|/g" | \
@@ -106,6 +107,7 @@ echo $@ | sed 's/PBS/SBATCH/g' | \
   sed 's/ -j[ ]*oe/ --error=error.out/g' |
   sed "s/-q[ ]*debug/--partition=$STUBL_DEBUG_PARTITION/g" |
   sed "s/-q[ ]*ccr/--partition=$STUBL_DEFAULT_PARTITION/g" |
+  sed "s/-q[ ]*None/--partition=$STUBL_DEFAULT_PARTITION/g" |
   sed "s/-q[ ]*gpu/--partition=${STUBL_GPGPU_PARTITION}|#SBATCH --gres=gpus:2/g" |
   sed "s/:MEM[0-9].*GB[:]*/|#SBATCH --mem=$MEM|/g" | \
   tr '|' '\n' |
@@ -129,7 +131,7 @@ else
    else
      cat $1 | egrep '^#PBS' | xargs --replace -n1 pbs2sbatch  {} | grep -v '#SBATCH --export=NONE'
    fi
-   echo "#SBATCH --export=$MyExport"
+   # echo "#SBATCH --export=$MyExport"
 fi
 
 

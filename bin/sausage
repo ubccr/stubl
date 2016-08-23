@@ -1,0 +1,148 @@
+#!/bin/bash
+
+if [ "$1" == "--help" ]; then
+  echo "======================================================================================="
+  echo ""
+  echo "  sausage - SLURM account usage. Computes the number of CPU hours used by a user, group"
+  echo "  or account.                                                    "
+  echo ""
+  echo "  Usage: sausage --group=[group]|--account=[account]|--user=[user] [start_date_mmddyy]]"
+  echo ""
+  echo "  Note: for industry accounts, start_date must be 010112 or after 073015               "
+  echo "======================================================================================="
+
+  exit
+fi
+
+# determine STUBL install location
+# Copied from Apache Ant:
+# https://git-wip-us.apache.org/repos/asf?p=ant.git;a=blob;f=src/script/ant;h=b5ed5be6a8fe3a08d26dea53ea0fb3f5fab45e3f
+if [ -z "$STUBL_HOME" -o ! -d "$STUBL_HOME" ] ; then
+  ## resolve links - $0 may be a link to stubl's home
+  PRG="$0"
+  progname=`basename "$0"`
+
+  # need this for relative symlinks
+  while [ -h "$PRG" ] ; do
+    ls=`ls -ld "$PRG"`
+    link=`expr "$ls" : '.*-> \(.*\)$'`
+    if expr "$link" : '/.*' > /dev/null; then
+    PRG="$link"
+    else
+    PRG=`dirname "$PRG"`"/$link"
+    fi
+  done
+
+  STUBL_HOME=`dirname "$PRG"`/..
+
+  # make it fully qualified
+  STUBL_HOME=`cd "$STUBL_HOME" > /dev/null && pwd`
+fi
+
+export STUBL_HOME=$STUBL_HOME
+
+# setup STUBL environment
+. $STUBL_HOME/conf/stubl 
+
+# Location of helper scripts
+MYDIR=$STUBL_HOME/bin/sausage_helpers
+
+# accouting data from prior to 07/30/2015
+PRESUM_FILE=$STUBL_HOME/$STUBL_PRESUM_FILE 
+
+# user id to exclude from group
+USEREXCLUDE=$STUBL_USER_EXCLUDE
+
+LISTGROUP=$MYDIR/ListGroup.sh
+
+if [ "$1" == "" ]; then
+  echo "Please specify a user (--user=), a user group (--group=), or an account (--account=)!"
+  exit
+fi
+
+if [ "$2" == "" ]; then
+  start=010112
+else
+  start=$2
+fi
+
+# only aggretate values are available prior to 07/30/2015
+# so don't allow intermediate start dates
+bIndustry=`echo "$1" | cut -d= -f2 | grep '^pi-' | wc -l`
+if [ "$bIndustry" == "1" ]; then
+  if [ "$start" -gt "010112" -a "$start" -lt "073015" ]; then
+    echo "Start date must be either 010112 or later than 073015"
+    exit
+  fi
+fi
+
+option=`echo $1 | cut -d= -f1`
+
+if [ "$option" == "--group" ]; then
+  acct=""
+  grp=`echo $1 | cut -d= -f2`
+  ssh -q rush "export STUBL_HOME=$STUBL_HOME; $LISTGROUP $grp" | grep -v $USEREXCLUDE | awk '{ print $2 }' > tmp1
+  ssh -q presto "export STUBL_HOME=$STUBL_HOME; $LISTGROUP $grp" | grep -v $USEREXCLUDE | awk '{ print $2 }' >> tmp1
+  userList=`sort -u tmp1 | tr '\n' ' '`
+  rm -f tmp1
+elif [ "$option" == "--account" ]; then
+  acct=`echo $1 | cut -d= -f2`
+  ssh -q rush "sacctmgr show associations account=$acct format=Cluster,Account,User" | awk '{ print $3 }' | sed -n '4,$p' | sort -u | grep -v '^$' > tmp1
+  ssh -q presto "sacctmgr show associations account=$acct format=Cluster,Account,User" | awk '{ print $3 }' | sed -n '4,$p' | sort -u | grep -v '^$' >> tmp1
+  userList=`sort -u tmp1 | tr '\n' ' '`
+  rm -f tmp1
+
+  presumEntry=`grep "$acct" $PRESUM_FILE`
+  if [ "$presumEntry" != "" ]; then
+    presum=`echo $presumEntry | cut -d: -f2`
+  else
+    presum=0
+  fi
+
+  acct="--accounts=$acct"
+elif [ "$option" == "--user" ]; then
+  userList=`echo $1 | cut -d= -f2`
+else
+  acct=""
+  grp=$1
+  ssh -q rush "export STUBL_HOME=$STUBL_HOME; $LISTGROUP $grp" | grep -v $USEREXCLUDE | awk '{ print $2 }' > tmp1
+  ssh -q presto "export STUBL_HOME=$STUBL_HOME; $LISTGROUP $grp" | grep -v $USEREXCLUDE | awk '{ print $2 }' >> tmp1
+  userList=`sort -u tmp1 | tr '\n' ' '`
+  rm -f tmp1
+fi
+echo "users = $userList"
+echo "start date = $start"
+
+grandSum=0
+sum=0
+for u in $userList; do
+  # for HH:MM:SS job times
+  nhrs=`ssh -q rush "module load stubl; slogs $start $u -X $acct" | awk '{ print $6,":",$3; }' | grep '^[0-9]' | grep -v '-' | awk -F: '{ printf("%lf\n", $4*($1+($2/60)+($3/3600))); }' | awk '{ sum+=$1} END {print sum}'`
+  sum=`echo "$sum $nhrs" | awk '{ printf("%lf\n", $1+$2); }'`
+
+  # for DD-HH:MM:SS job times
+  nhrs=`ssh -q rush "module load stubl; slogs $start $u -X $acct" | awk '{ print $6,":",$3; }' | grep '^[0-9]' | grep '-' | sed 's/-/:/g' | awk -F: '{ printf("%lf\n", $5*(($1*24)+$2+($3/60)+($4/3600))); }' | awk '{ sum+=$1} END {print sum}'`
+  sum=`echo "$sum $nhrs" | awk '{ printf("%lf\n", $1+$2); }'`
+done
+echo "CPU hours on rush since $start : $sum"
+grandSum=$sum
+
+sum=0
+for u in $userList; do
+  # for HH:MM:SS job times
+  nhrs=`ssh -q presto "module load stubl; slogs $start $u --clusters=industry -X $acct" | awk '{ print $6,":",$3; }' | grep '^[0-9]' | grep -v '-' | awk -F: '{ printf("%lf\n", $4*($1+($2/60)+($3/3600))); }' | awk '{ sum+=$1} END {print sum}'`
+  sum=`echo "$sum $nhrs" | awk '{ printf("%lf\n", $1+$2); }'`
+
+  # for DD-HH:MM:SS job times
+  nhrs=`ssh -q presto "module load stubl; slogs $start $u --clusters=industry -X $acct" | awk '{ print $6,":",$3; }' | grep '^[0-9]' | grep '-' | sed 's/-/:/g' | awk -F: '{ printf("%lf\n", $5*(($1*24)+$2+($3/60)+($4/3600))); }' | awk '{ sum+=$1} END {print sum}'`
+  sum=`echo "$sum $nhrs" | awk '{ printf("%lf\n", $1+$2); }'`
+done
+
+if [ "$start" -le "010112" ]; then
+   sum=`echo "$sum $presum" | awk '{ printf("%lf\n", $1+$2); }'`
+fi
+echo "CPU hours on presto since $start : $sum"
+
+grandSum=`expr "$sum $grandSum" | awk '{ printf("%lf\n", $1+$2); }'`
+echo "Grand Total : $grandSum"
+

@@ -47,7 +47,7 @@ if [ "$jobId" == "" -o "$jobId" == "--help" ]; then
   echo "  sgetscr <job_id> [partition] [cluster]"
   echo ""
   echo "Retrieves the SLURM/SBATCH script and environment "
-  echo "files for a job that is queued or running."
+  echo "files for a job that is queued, running, or complete."
   echo ""
   exit
 fi
@@ -56,12 +56,22 @@ curState=`squeue --job=${jobId} --clusters=${cluster} --partition=${partition} -
 
 # echo "curState = $curState"
 
-if [ "${curState}" != "PENDING" -a "${curState}" != "RUNNING" ]; then
-  echo "The job must be running or queued."
-  exit
+if [ "${curState}" != "PENDING" ]; then
+  start=`sacct -M $cluster -j $jobId -o Start -n -P -X | cut -dT -f1 | sed 's/-//g'`
+  fname=$STUBL_JOBSCRIPT_ROOT_DIR/$cluster/$start/${jobId}.savescript
+  if [ -f $fname ]; then
+    cat $fname | tee job_${jobId}_script.txt
+  else
+    echo "Job script not available. jobid=$jobId and cluster=$cluster"
+    echo "I looked here: $fname"
+  fi
+else
+  fname=`scontrol show job $jobId --clusters=$cluster | grep " Command=" | cut -d= -f2 | awk '{ print $1 }'`
+  if [ ! -f "$fname" ]; then
+    echo "Job script not available. jobid=$jobId and cluster=$cluster"
+  else  
+    sudo cat $fname | tee job_${jobId}_script.txt
+  fi
 fi
-
-sudo cat $STUBL_SLURM_STATE_DIR/${cluster}/job.${jobId}/script > job_${jobId}_script.txt
-sudo cat $STUBL_SLURM_STATE_DIR/${cluster}/job.${jobId}/environment > job_${jobId}_environment.txt
 
 

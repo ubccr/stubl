@@ -1,0 +1,16 @@
+#!/bin/bash
+#sinfo -M industry -p scavenger --states=idle --format="I %n %Y %m %f"|tail -n+3
+#sinfo -M chemistry -p scavenger --states=idle --format="C %n %Y %m %f"|tail -n+3
+#sinfo -M mae -p scavenger --states=idle --format="M %n %Y %m %f"|tail -n+3
+#sinfo -M physics -p scavenger --states=idle --format="P %n %Y %m %f"|tail -n+3
+
+CLUSTERS="industry chemistry mae physics"
+for i in $CLUSTERS; do
+  echo "Available nodes on the $i cluster:"
+  echo 
+  echo " # OF NODES | # CORES |  MEMORY (mb)  | TAGS"
+  echo "======================================================"
+  sinfo -M $i -p scavenger --states=idle --format="    %4D    |   %2c    |    %7m    | %20f"|tail -n+3
+  echo
+done
+

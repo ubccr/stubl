@@ -4,8 +4,8 @@ if [ "$1" == "" -o "$1" == "--help" ]; then
   echo "========================================"
   echo "sjeff (Check SLURM Job Efficiency)      "
   echo " "
-  echo "  Computes the CPU efficiency of a run- "
-  echo "  ning job.                             "
+  echo "  Computes the CPU efficiency and memory"
+  echo "  usage of a running job.               "
   echo " "
   echo "  Note: calculation may be high if the  "
   echo "  user has multiple jobs running on the "
@@ -23,14 +23,14 @@ if [ "$1" == "" -o "$1" == "--help" ]; then
   echo "  Environment Variables:                "
   echo "    STUBL_SJEFF_PCPU=(ps|top)           "
   echo " "
-  echo "      ps - use %cpu from ps command.    "
+  echo "      ps - use %cpu from ps command."
   echo "           This is the average cpu use  "
   echo "           over the life of the job.    "
   echo " "
-  echo "     top - use %cpu from top command.   "
-  echo "           This is a 1 second snapshot  "
-  echo "           of cpu usage and reflects    "
-  echo "           current job behavior.        "
+  echo "    top - use %cpu from the top command."
+  echo "          This is a 1 second snapshot of"
+  echo "          cpu usage and reflects current"
+  echo "          job behavior."
   echo "========================================"
   exit
 fi
@@ -45,23 +45,37 @@ fi
 shift
 
 #display header
-echo "Job_ID    Username  Efficiency  Number_of_CPUs_In_Use"
+echo "Job_ID    Username  Mem_Request  Max_Mem_Use  CPU_Efficiency  Number_of_CPUs_In_Use"
 
 for job in $jobList; do
   jobInfo=`squeue -h $@ --job=$job --state='R' 2>/dev/null | grep -v CLUSTER`
-
+  # guard against multiple results, as can happen with job arrays
+  njobs=`squeue -h $@ --job=$job --state='R' 2>/dev/null | grep -v CLUSTER | wc -l`
+  
   if [ "$jobInfo" == "" -a "$1" != "--all" ]; then
     echo "Invalid job ID ($job)"
+  elif [ "$njobs" != "1" ]; then
+    :
   else
     user=`echo $jobInfo | awk '{ print $4 }'`
+    uid=`id -u $user`
     nodelist=`echo $jobInfo | awk '{ print $8 }'`
     nodelist=`nodeset -e $nodelist | tr ' ' ','`
 
     # how many cpus were requested for the job
     ncpus=`squeue -h $@ --job=$job -o %C | grep -v CLUSTER`
 
+    # total number of cpus actually reserved for the user on the nodes
+    # this includes stacked jobs
+    tcpus=`squeue -h -u $user $@ --nodes=$nodelist -o %C | grep -v CLUSTER | awk '{ sum+=$1} END {print sum}'`
+
+    # adjust cpu usage by a multiplier to account for stacked jobs
+    cfact=`echo "$ncpus / $tcpus" | bc -l`
+
+    # how much memory requested for the job
+    mreq=`sacct -X $@ -j $job -n -o"ReqMem"`
+
     # accumulate efficiency of each requested cpu
-    bStackedJobs=no
     # echo "clush -w $nodelist \"ps -u $user -o pcpu= \""
     if [ "$STUBL_SJEFF_PCPU" != "top" ]; then
       effsum=`clush -w $nodelist -N "ps -u $user -o pcpu= " 2>/dev/null | awk '{ sum+=$1} END {print sum}'`
@@ -72,40 +86,39 @@ for job in $jobList; do
     if [ "$effsum" == "" ]; then
       effsum=0
     fi
-    njobs=`squeue -h $@ --nodes=$nodelist --user=$user -o %A | grep -v CLUSTER |sort -u | wc -l`
-    if [ "$njobs" -gt "1" ]; then
-      bStackedJobs=yes
-    fi
 
     # compute overall efficiency of the job
-    eff=`echo $effsum $ncpus | awk '{ printf("%0.2lf\n", $1/$2); }'`
+    if [ "$ncpus" == "0" -o "$ncpus" == "" ]; then
+      eff=0.00
+    else
+      eff=`echo "$effsum $ncpus $cfact" | awk '{ printf("%0.2lf\n", $3*($1/$2)); }'`
+    fi
 
     # limit max efficiency
     bIsMax=`echo "$eff > 100" | bc -l`
     if [ "$bIsMax" == "1" ]; then
       eff=100.00
     fi
-  
+        
     # compute overall number of cpus in use
     effcpu=`echo $eff $ncpus | awk '{ printf("%0.2lf\n", $1 * $2 / 100); }'`
+
+    # accumulate memory usage of each node, read peak memory usage from cgroup file
+    memsum=`clush -w $nodelist -N "cat /cgroup/memory/slurm/uid_${uid}/job_${job}/memory.max_usage_in_bytes" 2>/dev/null | awk '{ sum+=$1} END {print sum}'`
+
+    # mem usage per node
+    if [ "memsum" != "" ]; then
+      nnodes=`sacct -X $@ -j $job -n -o"NNODES"` 
+      memsum=`echo "$memsum / $nnodes" | bc -l | awk '{ printf("%0.2lfGn", $1/1E9); }'`
+    fi
 
    # test for poor efficiency (<50%)
     bRed=`echo "$eff < 50" | bc -l`
     if [ "$bRed" == "0" ]; then    
-      # if jobs are stacked the calculated value might be an overestimate
-      if [ "$bStackedJobs" == "yes" ]; then
-        echo "$job $user $eff $effcpu $ncpus" | awk '{ printf("%-8s  %-8s  <= %-6s%%  (at most %s of %s)\n", $1, $2, $3, $4, $5); }'
-      else
-        echo "$job $user $eff $effcpu $ncpus" | awk '{ printf("%-8s  %-8s   = %-6s%%  (%s of %s)\n", $1, $2, $3, $4, $5); }'
-      fi
+      echo "$job $user $eff $effcpu $ncpus $mreq $memsum" | awk '{ printf("%-8s  %-8s  %-11s  %-11s   = %10s%%  (%s of %s)\n", $1, $2, $6, $7, $3, $4, $5); }'
     # highlight inefficient jobs
     else
-# if jobs are stacked the calculated value might be an overestimate
-      if [ "$bStackedJobs" == "yes" ]; then
-        echo "$job $user $eff $effcpu $ncpus" | awk '{ printf("%c[0;31m%-8s  %-8s  <= %-6s%%  (at most %s of %s)\n%c[0m", 27, $1, $2, $3, $4, $5, 27); }'
-      else
-        echo "$job $user $eff $effcpu $ncpus" | awk '{ printf("%c[0;31m%-8s  %-8s   = %-6s%%  (%s of %s)\n%c[0m", 27, $1, $2, $3, $4, $5, 27); }'
-      fi
+      echo "$job $user $eff $effcpu $ncpus $mreq $memsum" | awk '{ printf("%c[0;31m%-8s  %-8s  %-11s  %-11s   = %10s%%  (%s of %s)\n%c[0m", 27, $1, $2, $6, $7, $3, $4, $5, 27); }'
     fi
   fi
 done

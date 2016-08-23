@@ -4,8 +4,9 @@ if [ "$1" == "" -o "$1" == "--help" ]; then
   echo "========================================"
   echo "sueff (SLURM User Efficiency)           "
   echo " "
-  echo "  Computes the overall CPU efficiency of"
-  echo "  the given users currently running jobs"
+  echo "  Computes the overall CPU efficiency and"
+  echo "  memory utilization of the given users  "
+  echo "  currently running jobs.               "
   echo " "
   echo "  Command Line Args:                    "
   echo "    arg1 = userid (or comma-separated   "
@@ -28,9 +29,10 @@ fi
 shift
 
 #display header
-echo "Username  Efficiency  Number_of_CPUs_In_Use"
+echo "Username  Mem_Request  Max_Mem_Use  CPU_Efficiency  Number_of_CPUs_In_Use"
 
 for user in $userList; do
+  uid=`id -u $user`
   nodelist=`squeue -h --state='R' --user=$user -o %N $@ | grep -v "CLUSTER" | sort -u | tr '\n' ' '`
 
   if [ "$nodelist" == ""  -a "$1" != "--all" ]; then
@@ -41,6 +43,14 @@ for user in $userList; do
     # how many cpus were requested for the users jobs
     ncpus=`squeue -h --state='R' --user=$user -o %C $@ | grep -v "CLUSTER" | awk '{ SUM += $1;} END {print SUM }'`
 
+    # how much memory requested for the jobs
+    nreq=`sacct -X $@ --state=R --user=$user -n -o"ReqMem" | sort -u | wc -l`
+    if [ "$nreq" -gt "1" ]; then
+      mreq="varied"
+    else
+      mreq=`sacct -X $@ --state=R --user=$user -n -o"ReqMem" | sort -u`
+    fi
+
     # accumulate efficiency 
     effsum=`clush -w $nodelist -N "ps -u $user -o pcpu= " 2>/dev/null | awk 'BEGIN {sum=0} {sum+=$1} END {print sum}'`
 
@@ -50,13 +60,22 @@ for user in $userList; do
     # compute overall number of cpus in use
     effcpu=`echo $eff $ncpus | awk '{ printf("%0.2lf\n", $1 * $2 / 100); }'`
 
+    # accumulate memory usage of each node, read peak memory usage from cgroup file
+    memsum=`clush -w $nodelist -N "cat /cgroup/memory/slurm/uid_${uid}/job_*/memory.max_usage_in_bytes" 2>/dev/null | awk '{ sum+=$1} END {print sum}'`
+
+    # mem usage per node
+    if [ "memsum" != "" ]; then
+      nnodes=`sacct -X --state=R $@ --user=$user -n -o"NNODES" | awk 'BEGIN {sum=0} { sum+=$1} END {print sum}'`
+      memsum=`echo "$memsum / $nnodes" | bc -l | awk '{ printf("%0.2lfGn", $1/1E9); }'`
+    fi
+
     # test for poor efficiency (<50%)
     bRed=`echo "$eff < 50" | bc -l`
     if [ "$bRed" == "1" ]; then
       # not efficient highlight in red
-      echo "$user $eff $effcpu $ncpus" | awk '{ printf("%c[0;31m%-8s   %8s%%  (%s of %s)\n%c[0m", 27, $1, $2, $3, $4, 27); }'
+      echo "$user $eff $effcpu $ncpus $mreq $memsum" | awk '{ printf("%c[0;31m%-8s  %-11s  %-11s  %13s%%  (%s of %s)\n%c[0m", 27, $1, $5, $6, $2, $3, $4, 27); }'
     else
-      echo "$user $eff $effcpu $ncpus" | awk '{ printf("%-8s   %8s%%  (%s of %s)\n", $1, $2, $3, $4); }'
+      echo "$user $eff $effcpu $ncpus $mreq $memsum" | awk '{ printf("%-8s  %-11s  %-11s  %13s%%  (%s of %s)\n", $1, $5, $6, $2, $3, $4); }'
     fi
   fi
 done

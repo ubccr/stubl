@@ -46,7 +46,14 @@ fi
 # preserve front matter (the stuff before PBS directives)
 nFront=`grep -n -m 1 "#PBS" $1 | cut -d':' -f1`
 nFront=`expr $nFront - 1`
-head -n $nFront $1 > $2
+
+bShell=`head -n1 $1 | grep "^#\!" | wc -l`
+if [ "$bShell" == "0" ]; then
+  echo "#!/bin/bash" > $2
+  head -n $nFront $1 >> $2
+else
+  head -n $nFront $1 > $2
+fi
 
 # use pbs2sbatch to convert the directives
 $STUBL_HOME/bin/pbs2sbatch $1 | sort -u >> $2

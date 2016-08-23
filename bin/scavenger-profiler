@@ -1,0 +1,30 @@
+#!/bin/bash
+echo 
+echo "Available node types, ordered from best to worst CPU:"
+echo 
+echo " # OF NODES | # CORES |  MEMORY (mb)  | TAGS"
+echo "======================================================"
+echo
+sinfo -M chemistry -p scavenger --states=idle --format="    %4D    |   %2c    |    %7m    | %20f"|tail -n+3 |grep CPU-E5-2650v3
+sinfo -M mae -p scavenger --states=idle --format="    %4D    |   %2c    |    %7m    | %20f"|tail -n+3 |grep IB,CPU-E5-2650v3
+sinfo -M chemistry -p scavenger --states=idle --format="    %4D    |   %2c    |    %7m    | %20f"|tail -n+3 |grep CPU-E5-2630v3
+sinfo -M chemistry -p scavenger --states=idle --format="    %4D    |   %2c    |    %7m    | %20f"|tail -n+3 |grep CPU-E5-2620v3
+sinfo -M mae -p scavenger --states=idle --format="    %4D    |   %2c    |    %7m    | %20f"|tail -n+3 |grep CPU-E5-2620v3
+sinfo -M industry -p scavenger --states=idle --format="    %4D    |   %2c    |    %7m    | %20f"|tail -n+3 
+sinfo -M physics -p scavenger --states=idle --format="    %4D    |   %2c    |    %7m    | %20f"|tail -n+3 |grep CPU-E3-1220v2
+sinfo -M chemistry -p scavenger --states=idle --format="    %4D    |   %2c    |    %7m    | %20f"|tail -n+3 |grep IB,CPU-E5-2660
+sinfo -M chemistry -p scavenger --states=idle --format="    %4D    |   %2c    |    %7m    | %20f"|tail -n+3 |grep CPU-E5-2430 
+sinfo -M chemistry -p scavenger --states=idle --format="    %4D    |   %2c    |    %7m    | %20f"|tail -n+3 |grep CPU-E5645
+sinfo -M physics -p scavenger --states=idle --format="    %4D    |   %2c    |    %7m    | %20f"|tail -n+3 |grep CPU-E5420
+sinfo -M chemistry -p scavenger --states=idle --format="    %4D    |   %2c    |    %7m    | %20f"|tail -n+3 |grep CPU-L5520
+sinfo -M mae -p scavenger --states=idle --format="    %4D    |   %2c    |    %7m    | %20f"|tail -n+3 |grep CPU-4386
+sinfo -M mae -p scavenger --states=idle --format="    %4D    |   %2c    |    %7m    | %20f"|tail -n+3 |grep CPU-6320
+sinfo -M mae -p scavenger --states=idle --format="    %4D    |   %2c    |    %7m    | %20f"|tail -n+3 |grep CPU-4162EE
+sinfo -M physics -p scavenger --states=idle --format="    %4D    |   %2c    |    %7m    | %20f"|tail -n+3 |grep CPU-E5620
+echo
+echo "To used a specific set or subset of nodes, use the following in the submitted slurm script:"
+echo
+echo "	--constraint=CPU-E5-2650v3"
+echo "	or "
+echo "	--constraint=CPU-E5-2650v3|CPU-E5-2630v3|CPU-E5-2620v3"
+echo 

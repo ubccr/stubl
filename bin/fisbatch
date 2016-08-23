@@ -102,6 +102,15 @@ if [ "$npart1" == "0" -a "$npart2" == "0" ]; then
   exit 1
 fi
 
+# assign qos
+ARGS="$@"
+qos=`echo $@ | tr ' ' '\n' | grep "\-\-qos=" | cut -d'=' -f2`
+if [ "$qos" == "" ]; then
+  # the default qos is the partition, add it to the args
+  qos=$partition
+  ARGS="$@ --qos=$qos"
+fi
+
 # check for node maintenance
 c1=`snodes all ${cluster}/${partition} | wc -l`
 c1=`expr $c1 - 1`
@@ -120,7 +129,8 @@ fi
 MyExport=SLURM_CPUS_PER_TASK,SLURM_JOB_NAME,SLURM_NTASKS_PER_NODE,SLURM_PRIO_PROCESS,SLURM_SUBMIT_DIR,SLURM_SUBMIT_HOST
 #JOB=`sbatch --export=$MyExport --job-name=FISBATCH --output=/dev/null --error=/dev/null $@ $BS 2>&1 | egrep -o -e "\b[0-9]+$"`
 #JOB=`sbatch --export=$MyExport --job-name=FISBATCH --output=/dev/null --error=/dev/null $@ $BS 2>&1 | egrep -o -e "\b[0-9]+"`
-JOB=`sbatch --job-name=FISBATCH --output=/dev/null --error=/dev/null $@ $BS 2>&1 | egrep -o -e "\b[0-9]+"`
+#JOB=`sbatch --job-name=FISBATCH --output=/dev/null --error=/dev/null $@ $BS 2>&1 | egrep -o -e "\b[0-9]+"`
+JOB=`sbatch --job-name=FISBATCH --output=/dev/null --error=/dev/null $ARGS $BS 2>&1 | egrep -o -e "\b[0-9]+"`
 JOB=`echo $JOB | awk '{ printf("%d", $1 + 0); }'`
 
 # Make sure the job is always canceled
@@ -154,7 +164,16 @@ done
 HNODE=""
 usr=`whoami`
 NODE=`squeue -h --clusters=${cluster} --partition=${partition} --jobs=${JOB} -o %N | grep -v "^CLUSTER"`
-NODE=`nodeset -e $NODE`
+
+# unset python environment before running nodeset and then restore it, see RT#21322
+PYHOME=$PYTHONHOME
+PYPATH=$PYTHONPATH
+unset PYTHONHOME
+unset PYTHONPATH
+  NODE=`nodeset -e $NODE`
+export PYTHONPATH=$PYPATH
+export PYTHONHOME=$PYHOME
+
 for i in $NODE; do
    screenTest=`ssh $i "ps -ef | grep $usr | grep \[S\]CREEN | wc -l"`
    if [ "$screenTest" != "0" ]; then

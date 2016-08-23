@@ -1,4 +1,7 @@
 conf/stubl
 log/NodeInfo.log
-src/slurmbf/*.o
+*.o
 .project
+*.cache
+presum.txt
+

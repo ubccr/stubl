@@ -60,6 +60,10 @@ echo "
       Note that many scontrol commands can 
       only be executed by system admins.
 
+   seff
+      seff is used to show cpu and memory
+      efficiency of completed jobs.
+
    sinfo
       sinfo reports the state of partitions 
       and nodes managed by SLURM. It has a 
@@ -111,6 +115,22 @@ echo "
       for jobs, partitions, and nodes 
       managed by SLURM.
 
+   Summary of STUBL Scavenger  Commands
+   =========================================
+   These are commands added by UB CCR staff
+   and others as part of STUBL (SLURM Tools
+   and UBiLities). 
+   Many of these commands are designed to 
+   help users to scavenge compute cycles.
+   =========================================
+
+   scavenger-profiler
+
+   scabatch
+
+   scavenger-checker
+
+
    Summary of STUBL SLURM Commands
    =========================================
    These are commands added by UB CCR staff
@@ -142,7 +162,16 @@ echo "
       create a SLURM_NODEFILE that is 
       consistent with the PBS_NODEFILE.
 
-  sgetscr
+   sausage
+      Retrieves accounting/billing information
+      for a user or account over some period
+      of time.
+
+   scounts
+     Computes the number of jobs completed by a 
+     user, group, or account.
+
+   sgetscr
       Retrieves the SLURM/SBATCH script and 
       environment files for a job that is queued 
       or running.
@@ -151,6 +180,10 @@ echo "
       Determines the efficiency of one or more
       running jobs. Inefficient jobs are high-
       lighted in red text. (see also sueff)
+
+   slimits
+      Show account privileges, qos membership,
+      and job sumission limits for a given user.
 
    slist
       Retrieves SLURM accounting and node 

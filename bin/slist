@@ -6,7 +6,7 @@ if [ "$1" == "--help" ]; then
   echo "  slist - a script that retrieves accounting           "
   echo "  and node information for a running or completed job. "
   echo ""
-  echo "  Usage: slist [job_id] "
+  echo "  Usage: slist [job_id] [optional_sacct_args]"
   echo ""
   echo "======================================================="
 
@@ -18,22 +18,27 @@ if [ "$1" == "" ]; then
   exit
 fi
 
+jid=$1
+shift
+
 # basic accounting information
 echo "JobID        User      Partition       NNodes NCPUS  Start               Elapsed      State      Priority   "
 echo "------------ --------- --------------- ------ ------ ------------------- ------------ ---------- -----------"
-sacct -j $1 --format=jobid%-12,user%-9,partition%-15,nnodes%-6,ncpus%-6,start%-19,elapsed%-12,state%-10,priority%-11 -X -n
+sacct $@ -j $jid --format=jobid%-12,user%-9,partition%-15,nnodes%-6,ncpus%-6,start%-19,elapsed%-12,state%-10,priority%-11 -X -n
 
-part=`sacct -j $1 --format=partition%-20 -X -n`
+part=`sacct $@ -j $jid --format=partition%-20 -X -n | awk '{ print $1 }'`
+clust=`sacct $@ -j $jid --format=cluster%-20 -X -n | awk '{ print $1 }'`
 
 #nodelist
 echo " "
-nodelist=`sacct -j $1 --format=nodelist -P -X -n | nodeset -e | grep -v "None assigned" | tr ' ' '\n' `
+nodelist=`sacct $@ -j $jid --format=nodelist -P -X -n | nodeset -e | grep -v "None assigned" | tr ' ' '\n' `
 j=0
 for i in $nodelist; do
   if [ "$j" == "0" ]; then
-    snodes $i $part
+    # echo "snodes $i ${clust}/${part}"
+    snodes $i ${clust}/${part}
   else
-    snodes $i $part | tail -n1
+    snodes $i ${clust}/${part} | tail -n1
   fi
   j=1
 done

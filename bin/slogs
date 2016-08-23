@@ -28,7 +28,8 @@ fi
 # setup STUBL environment
 . $STUBL_HOME/conf/stubl 
 
-BODY=$STUBL_HOME/bin/body
+TINS=$STUBL_HOME/bin/slogs_helpers/tins
+SLOGPLUS=$STUBL_HOME/bin/slogs_helpers/slogplus
 
 if [ "$1" == "--help" ]; then
   echo "======================================================="
@@ -47,6 +48,13 @@ if [ "$1" == "--help" ]; then
   echo "  Notes: start_date should be in MMDDYY format.        "
   echo "         Use a comma-separated list for multiple users."
   echo "         All sacct_args passed along to sacct command. "
+  echo ""
+  echo "  Extras: Include a \"--plus\" argument to select an   "
+  echo "          enhanced output format that includes data on "
+  echo "          cpu and memory efficiency.                   "
+  echo ""
+  echo "          Use the SACCT_XFMT environment variable to   "
+  echo "          request additional fields of output.         "
   echo ""
   echo " Defaults:                                             "
   echo "    start_date : 010113 if no start date is given.     "
@@ -82,8 +90,11 @@ else
   shift
 fi
 
+bPlus=`echo "$@" | grep ' --plus\|^--plus ' | wc -l`
+TheArgs=`echo "$@" | sed 's/^--plus //g' | sed 's/ --plus//g'`
+
 if [ "$TheGroup" == "all" ]; then
-    TheGroup=`sacct --start=${StartDate} --allusers $@ -ouser -n | \
+    TheGroup=`sacct --start=${StartDate} --allusers $TheArgs -ouser -n | \
              sort -u | \
              sed 's/ //g' | \
              tr '\n' ',' | \
@@ -94,24 +105,43 @@ TheList=`echo "$TheGroup" | tr ',' ' '`
 
 EndDate=`date +%m%d%y`
 
+if [ "$bPlus" == "1" ]; then
+  export SACCT_XFMT="TotalCPU"
+fi
+
 export SACCT_FORMAT="jobid%20,User,ncpus,start,elapsed,ReqMem,AveRSS,MaxRSS"
+if [ "$SACCT_XFMT" != "" ]; then
+  export SACCT_FORMAT="${SACCT_FORMAT},${SACCT_XFMT}"
+fi
 
-TMPFILE=${TheGroup}_usage_logs_${StartDate}_to_${EndDate}.tmp
-OUTFILE=${TheGroup}_usage_logs_${StartDate}_to_${EndDate}.txt
+TMPFILE=/tmp/${TheGroup}_usage_logs_${StartDate}_to_${EndDate}.tmp.$$
+PLUSFILE=/tmp/${TheGroup}_usage_logs_${StartDate}_to_${EndDate}.plus.$$
+#OUTFILE=${TheGroup}_usage_logs_${StartDate}_to_${EndDate}.txt
 
-echo "JobID                User      NCPUS   Start Date Time         Elapsed     ReqMem    AveRSS     MaxRSS" > $TMPFILE
+#echo $SACCT_HEADER > $TMPFILE
+rm -f $TMPFILE
 
+bHeader=1
 for i in $TheList; do
-  echo "Retrieving accouning data for user $i ..."
-  sacct --start=${StartDate} --user=$i $@ | \
-  sed "s/$i//g" |
-  sed "s/T/ /g" | \
-  awk -vuser=$i '{ 
-         printf("%-20s %-8s  %5s   %10s %8s   %10s   %8s  %9s   %9s\n", $1, user, $2, $3, $4, $5, $6, $7, $8);
-       }' \
-   >> $TMPFILE
+  echo "Retrieving accounting data for user $i ..."
+  user9=`echo $i | awk '{ printf("%9s", $1); }'`
+  if [ "$bHeader" == "1" ]; then
+    sacct --start=${StartDate} --user=$i $TheArgs  | $TINS 21 "$user9" 2 >> $TMPFILE
+  else
+    sacct --start=${StartDate} --user=$i -n $TheArgs  | $TINS 21 "$user9" 0 >> $TMPFILE
+  fi
+  bHeader=0
 done
+#cat $TMPFILE | sed "s/T/ /g" | tee $OUTFILE
 
-cat $TMPFILE | $BODY sort -k1 -V | tee $OUTFILE
+if [ "$bPlus" == "1" ]; then
+ cat $TMPFILE | sed "s/T/ /g" | grep '\.batch\|^               JobID'| sed 's/ otalCPU/TotalCPU/g' > $PLUSFILE
+ # echo "$SLOGPLUS $PLUSFILE"
+ $SLOGPLUS $PLUSFILE
+ mv $PLUSFILE `pwd`
+else
+  cat $TMPFILE | sed "s/T/ /g"
+fi
+
 rm $TMPFILE
 
