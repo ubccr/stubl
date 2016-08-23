@@ -147,6 +147,10 @@ echo "
       forwarding enabled. It is analogous
       to the PBS "qsub -I -X" command.
 
+   lsload
+      A command to display current load on
+      each node. Warns if load is too low.
+
    pbs2sbatch
       Converts PBS directives to equivalent
       SLURM SBATCH directives. Accommodates

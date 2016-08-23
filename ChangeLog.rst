@@ -72,6 +72,9 @@ sueff
 *NEW* slogs_helpers/
 --- Helpers for the slogs command
 
+*NEW* lsload
+--- A command to quickly check the cpu load on each node. Warns if load is too low.
+
 v0.0.9
 ----------------------
 
