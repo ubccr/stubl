@@ -1,0 +1,82 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+
+my $format_strings_only = '%-14s  %11s  %14s  %7s  %11s  %13s  %13s  %13s  %-15s  %s' . "\n";
+
+sub _PrintHeader {
+	printf ('%1$s' x 185 . "\n", '#');
+	printf ($format_strings_only, '# Hostname', 'CoresTotal', 'CoresAllocated', 'LoadAbs', 'LoadRel (%)', 'LoadAlloc (%)', 'MemTotal (GB)', 'MemAlloc (GB)', 'State', 'Reason');
+	printf ('%1$s' x 185 . "\n", '#');
+}
+
+_PrintHeader();
+
+my @lines = qx/scontrol -o show node/;
+my $line_counter = 0;
+
+foreach my $line (@lines) {
+	
+	#
+	# Parse and print load details for every node.
+	#
+	$line_counter++;
+	my $format_mixed = '%-14s  %11d  %14d  %7.1f  ';
+	my $reason;
+	chomp($line);
+	
+	if ($line =~ m/Reason=(.*)/) {
+		$reason = $1 . ' ';
+		$line =~ s/Reason=(.*)//g;
+	} else {
+		$reason = '';
+	}
+	
+	my %data = map {/([^= ]+)/ => /=\s*(.*)/} split(/\s+/, $line);
+	
+	if (defined($data{'Arch'})) {
+		
+		my $normalised_load;
+		my $allocated_cores_efficiency;
+		
+		if ($data{'CPUTot'} > 0) {
+			$normalised_load = $data{'CPULoad'}  / $data{'CPUTot'} * 100;
+			$format_mixed .= '%11.1f  ';
+			if ($normalised_load > 105) {
+				$reason .= 'ERROR: LoadRel TOO HIGH -> overloaded server will be slow at best or worse crash! ';
+			}
+		} else {
+			$normalised_load = '---';
+			$format_mixed .= '%11s  ';
+		}
+		
+		if ($data{'CPUAlloc'} > 0) {
+			$allocated_cores_efficiency = $data{'CPULoad'} / $data{'CPUAlloc'} * 100;
+			$format_mixed .= '%13.1f  ';
+			if ($allocated_cores_efficiency < 85) {
+				$reason .= 'WARN: LoadAlloc too low -> inefficient resource usage! ';
+			} elsif ($allocated_cores_efficiency > 105) {
+				$reason .= 'ERROR: LoadAlloc TOO HIGH -> jobs will be slow at best! ';
+			}
+		} else {
+			$allocated_cores_efficiency = '---';
+			$format_mixed .= '%13s  ';
+		}
+		
+		$format_mixed .= '%13d  %13d  %-15s  %s' . "\n";
+		printf ($format_mixed, $data{'NodeName'},$data{'CPUTot'},$data{'CPUAlloc'}, $data{'CPULoad'}, $normalised_load, $allocated_cores_efficiency, int($data{'RealMemory'} / 1024), int( $data{'AllocMem'} / 1024 ), $data{'State'}, $reason);
+		
+	} else {
+		printf ($format_strings_only, $data{'NodeName'}, '---', '---', '---', '---', '---', '---', '---', 'DOWN', $reason);
+	}
+	
+	#
+	# Repeat header after every 20 lines for long lists of nodes.
+	#
+	if ( ($line_counter / 20) == int($line_counter / 20) ) {
+		_PrintHeader();
+	}
+	
+}
+
