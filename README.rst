@@ -2,7 +2,7 @@
 STUBL - SLURM Tools and UBiLities
 =============================================================================
 
-STUBL is a collection of supplemental tools and utilitiy scripts for `SLURM
+STUBL is a collection of supplemental tools and utility scripts for `SLURM
 <http://slurm.schedmd.com/>`_. 
 
 .. image:: docs/stubl_thumb.gif
