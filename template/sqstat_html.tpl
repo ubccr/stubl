@@ -152,8 +152,8 @@ if (t < 0) {
         // Create the data table for Doughnut 1 chart
            var data = google.visualization.arrayToDataTable([
           ['Task', 'Hours per Day'],
-          ['Percentage Running',_ALLJRUN_ (_PCTJRUN_%)],
-          ['Percentage Queued', _ALLJQUE_ (_PCTJQUE_%)]
+          ['Percentage Running',_PCTJRUN_],
+          ['Percentage Queued', _PCTJQUE_]
         ]);
 
         // Set options for Doughnut 1 chart.
@@ -174,8 +174,8 @@ if (t < 0) {
         // Create the data table for Doughnut 2 Chart
          var data = google.visualization.arrayToDataTable([
           ['Task', 'Hours per Day'],
-          ['In Use', _ALLCUSE_ (_PCTCUSE_%)],
-          ['Unused',_ALLCUNU_ (_PCTCUNU_%) ]
+          ['In Use', _PCTCUSE_],
+          ['Unused',_PCTCUNU_ ]
         ]);
 
         // Set options for Doughnut 2 Chart
@@ -197,8 +197,8 @@ if (t < 0) {
         // Create the data table for Doughnut 3 Chart
          var data = google.visualization.arrayToDataTable([
           ['Task', 'Hours per Day'],
-          ['In Use', _ALLNUSE_ (_PCTNUSE_%)],
-          ['Unused',_ALLNUNU_ (_PCTNUNU_%)]
+          ['In Use', _PCTNUSE_],
+          ['Unused',_PCTNUNU_]
         ]);
 
         // Set options for Doughnut 3 Chart
@@ -275,7 +275,8 @@ if (t < 0) {
     <td>_QUEUEDJOBS_</td>
     <td>_NODESINUSE_ of _NODESTOTAL_</td>
     <td>_CORESINUSE_ of _CORESTOTAL_</td>
-    
+    <td>_CORESTOTAL_ - _CORESINUSE_</td>
+    <td>_NODESTOTAL_ - _NODESINUSE_</td>	
 </tr>
 </table>
 
