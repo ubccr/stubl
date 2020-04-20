@@ -282,7 +282,7 @@ if (t < 0) {
 
 <br/>
 
-<p>Summary of current jobs: </p>
+<p align="left">Summary of current jobs: </p>
 
 <table class="ccr-dtable">
 <tr>
@@ -300,7 +300,7 @@ if (t < 0) {
 
 <br/>
 
-<p>Summary of current core usage:</p>
+<p align="left">Summary of current core usage:</p>
 
 <table class="ccr-dtable">
 <tr>
@@ -320,7 +320,7 @@ if (t < 0) {
 
 <br/>
 
-<p>Summary of current node usage:</p>
+<p align="left">Summary of current node usage:</p>
 
 <table class="ccr-dtable">
 <tr>
