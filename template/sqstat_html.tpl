@@ -259,24 +259,22 @@ if (t < 0) {
 
 <table class="ccr-dtable">
 <tr>
-    <th>Peak (TFlop/s)</th>
+    <!--<th>Peak (TFlop/s)</th> -->
     <th>Status  Load</th>
     <th>Active Jobs</th>
     <th>Queued Jobs</th>
     <th>Nodes Utilized</th>
     <th>Processors Utilized</th>
-    <th>Processors Available</th>
-    <th>Empty Nodes</th>
+   
 </tr>
 <tr>
-    <td>_MAXFLOPS_</td>
+   <!-- <td>_MAXFLOPS_</td> -->
     <td>UP (_LOAD_%)</td>
     <td>_ACTIVEJOBS_</td>
     <td>_QUEUEDJOBS_</td>
     <td>_NODESINUSE_ of _NODESTOTAL_</td>
     <td>_CORESINUSE_ of _CORESTOTAL_</td>
-    <td>_CORESTOTAL_ - _CORESINUSE_</td>
-    <td>_NODESTOTAL_ - _NODESINUSE_</td>	
+	
 </tr>
 </table>
 
