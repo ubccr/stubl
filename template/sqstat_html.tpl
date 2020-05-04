@@ -93,7 +93,7 @@ smalltext{
     <!-- Enter next downtime date, year, and time here -->
 <script> 
   
-var deadline = new Date("dec 31, 2017 15:37:25").getTime(); 
+var deadline = new Date("may 05, 2020 17:20:50").getTime(); 
   
 var x = setInterval(function() { 
   
