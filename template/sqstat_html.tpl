@@ -24,100 +24,119 @@ img {
 
 <!-- Code for Downtime maintainance Timer -->
 
-<!DOCTYPE HTML> 
-<html> 
-<head> 
-<style> 
-body{ 
-    text-align: center; 
-    background: #fff; 
-  font-family: sans-serif; 
-  font-weight: 100; 
-} 
-h1{ 
-  color: #000000; 
-  font-weight: 100; 
-  font-size: 40px; 
-  margin: 40px 0px 20px; 
-} 
- #clockdiv{ 
-    font-family: sans-serif; 
-    color: #fff; 
-    display: inline-block; 
-    font-weight: 100; 
-    text-align: center; 
-    font-size: 30px; 
-} 
-#clockdiv > div{ 
-    padding: 10px; 
-    border-radius: 3px; 
-    background: #005bbb; 
-    display: inline-block; 
-} 
-#clockdiv div > span{ 
-    padding: 15px; 
-    border-radius: 3px; 
-    background: #005bbb; 
-    display: inline-block; 
-} 
-smalltext{ 
-    padding-top: 5px; 
-    font-size: 16px; 
-} 
-</style> 
-</head> 
-<body> 
-<h1>Countdown For Next Downtime Maintainance:</h1> 
-<div id="clockdiv"> 
-  <div> 
-    <span class="days" id="day"></span> 
-    <div class="smalltext">Days</div> 
-  </div> 
-  <div> 
-    <span class="hours" id="hour"></span> 
-    <div class="smalltext">Hours</div> 
-  </div> 
-  <div> 
-    <span class="minutes" id="minute"></span> 
-    <div class="smalltext">Minutes</div> 
-  </div> 
-  <div> 
-    <span class="seconds" id="second"></span> 
-    <div class="smalltext">Seconds</div> 
-  </div> 
-</div> 
-  
-<p id="demo"></p> 
- 
-    
+<!DOCTYPE HTML>
+<html>
+<head>
+<style>
+body{
+    text-align: center;
+    background: #fff;
+  font-family: sans-serif;
+  font-weight: 100;
+}
+h1{
+  color: #000000;
+  font-weight: 100;
+  font-size: 40px;
+  margin: 40px 0px 20px;
+}
+ #clockdiv{
+    font-family: sans-serif;
+    color: #fff;
+    display: inline-block;
+    font-weight: 100;
+    text-align: center;
+    font-size: 30px;
+}
+#clockdiv > div{
+    padding: 10px;
+    border-radius: 3px;
+    background: #005bbb;
+    display: inline-block;
+}
+#clockdiv div > span{
+    padding: 15px;
+    border-radius: 3px;
+    background: #005bbb;
+    display: inline-block;
+}
+smalltext{
+    padding-top: 5px;
+    font-size: 16px;
+}
+</style>
+</head>
+<body>
+<h1>Countdown For Next Downtime Maintainance:</h1>
+<div id="clockdiv">
+  <div>
+    <span class="days" id="day"></span>
+    <div class="smalltext">Days</div>
+  </div>
+  <div>
+    <span class="hours" id="hour"></span>
+    <div class="smalltext">Hours</div>
+  </div>
+  <div>
+    <span class="minutes" id="minute"></span>
+    <div class="smalltext">Minutes</div>
+  </div>
+  <div>
+    <span class="seconds" id="second"></span>
+    <div class="smalltext">Seconds</div>
+  </div>
+</div>
+
+<p id="demo"></p>
+
+
     <!-- Enter next downtime date, year, and time here -->
-<script> 
-  
-var deadline = new Date("may 05, 2020 17:20:50").getTime(); 
-  
-var x = setInterval(function() { 
-  
-var now = new Date().getTime(); 
-var t = deadline - now; 
-var days = Math.floor(t / (1000 * 60 * 60 * 24)); 
-var hours = Math.floor((t%(1000 * 60 * 60 * 24))/(1000 * 60 * 60)); 
-var minutes = Math.floor((t % (1000 * 60 * 60)) / (1000 * 60)); 
-var seconds = Math.floor((t % (1000 * 60)) / 1000); 
-document.getElementById("day").innerHTML =days ; 
-document.getElementById("hour").innerHTML =hours; 
-document.getElementById("minute").innerHTML = minutes;  
-document.getElementById("second").innerHTML =seconds;  
-if (t < 0) { 
-        clearInterval(x); 
-        document.getElementById("demo").innerHTML = "Downtime Maintainance in Progress..."; 
-        document.getElementById("day").innerHTML ='0'; 
-        document.getElementById("hour").innerHTML ='0'; 
-        document.getElementById("minute").innerHTML ='0' ;  
-        document.getElementById("second").innerHTML = '0'; } 
-}, 1000); 
-</script> 
-</body> 
-</html> 
+<script>
+
+var x = setInterval(function() {
+
+var now = new Date();
+
+var year = now.getFullYear();
+var month = now.getMonth();
+var lastDay = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+if (year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0)) 
+{
+		lastDay[2] = 29;
+}
+var deadline = new Date()
+deadline.setFullYear(year, month, lastDay[month]);
+deadline.setDate(deadline.getDate() - deadline.getDay()-5);
+deadline.setHours(0,0,0,0);
+console.log(deadline)
+if(now-deadline>=86400000)
+{
+	month=deadline.getMonth()+1;
+	deadline.setFullYear(year, month, lastDay[month]);
+	deadline.setDate(deadline.getDate() - deadline.getDay()-5);
+	//console.log(deadline)
+}
+
+var t = deadline - now;
+var days = Math.floor(t / (1000 * 60 * 60 * 24));
+var hours = Math.floor((t%(1000 * 60 * 60 * 24))/(1000 * 60 * 60));
+var minutes = Math.floor((t % (1000 * 60 * 60)) / (1000 * 60));
+var seconds = Math.floor((t % (1000 * 60)) / 1000);
+document.getElementById("day").innerHTML =days ;
+document.getElementById("hour").innerHTML =hours;
+document.getElementById("minute").innerHTML = minutes;
+document.getElementById("second").innerHTML =seconds;
+if (t < 0) {
+        clearInterval(x);
+        document.getElementById("demo").innerHTML = "Downtime Maintainance in Progress...";
+        document.getElementById("day").innerHTML ='0';
+        document.getElementById("hour").innerHTML ='0';
+        document.getElementById("minute").innerHTML ='0' ;
+        document.getElementById("second").innerHTML = '0'; }
+}, 1000);
+</script>
+</body>
+</html>
 
 <!-- End of code for Countdown Timer -->
 
