@@ -165,7 +165,7 @@ if (t < 0) {
     // Draw the Doughnut 3 chart
       google.charts.setOnLoadCallback(drawDoughnut3Chart);
 
-      // Callback that draws the pie chart for Sarah's pizza.
+      // Callback to draw the pie chart
       function drawDoughnut1Chart() {
 
         // Create the data table for Doughnut 1 chart
