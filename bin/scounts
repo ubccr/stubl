@@ -77,13 +77,13 @@ fi
 if [ "$option" == "--group" ]; then
   acct=""
   grp=`echo $1 | cut -d= -f2`
-  ssh -q rush "export STUBL_HOME=$STUBL_HOME; $LISTGROUP $grp" | grep -v $USEREXCLUDE | awk '{ print $2 }' > tmp1
+  ssh -q vortex "export STUBL_HOME=$STUBL_HOME; $LISTGROUP $grp" | grep -v $USEREXCLUDE | awk '{ print $2 }' > tmp1
   ssh -q presto "export STUBL_HOME=$STUBL_HOME; $LISTGROUP $grp" | grep -v $USEREXCLUDE | awk '{ print $2 }' >> tmp1
   userList=`sort -u tmp1 | tr '\n' ' '`
   rm -f tmp1
 elif [ "$option" == "--account" ]; then
   acct=`echo $1 | cut -d= -f2`
-  ssh -q rush "sacctmgr show associations account=$acct format=Cluster,Account,User" | awk '{ print $3 }' | sed -n '4,$p' | sort -u | grep -v '^$' > tmp1
+  ssh -q vortex "sacctmgr show associations account=$acct format=Cluster,Account,User" | awk '{ print $3 }' | sed -n '4,$p' | sort -u | grep -v '^$' > tmp1
   ssh -q presto "sacctmgr show associations account=$acct format=Cluster,Account,User" | awk '{ print $3 }' | sed -n '4,$p' | sort -u | grep -v '^$' >> tmp1
   userList=`sort -u tmp1 | tr '\n' ' '`
   rm -f tmp1
@@ -102,7 +102,7 @@ elif [ "$option" == "--user" ]; then
 else
   acct=""
   grp=$1
-  ssh -q rush "export STUBL_HOME=$STUBL_HOME; $LISTGROUP $grp" | grep -v $USEREXCLUDE | awk '{ print $2 }' > tmp1
+  ssh -q vortex "export STUBL_HOME=$STUBL_HOME; $LISTGROUP $grp" | grep -v $USEREXCLUDE | awk '{ print $2 }' > tmp1
   ssh -q presto "export STUBL_HOME=$STUBL_HOME; $LISTGROUP $grp" | grep -v $USEREXCLUDE | awk '{ print $2 }' >> tmp1
   userList=`sort -u tmp1 | tr '\n' ' '`
   rm -f tmp1
@@ -112,10 +112,10 @@ echo "users = $userList"
 grandSum=0
 sum=0
 for u in $userList; do
-  nj=`ssh -q rush "module load stubl; slogs $start $u -X $acct" | awk '{ print $1 }' | grep '^[0-9]' | wc -l`
+  nj=`ssh -q vortex "module load stubl; slogs $start $u -X $acct" | awk '{ print $1 }' | grep '^[0-9]' | wc -l`
   sum=`expr $sum + $nj`
 done
-echo "Jobs run on rush since $start : $sum"
+echo "Jobs run on vortex since $start : $sum"
 grandSum=$sum
 
 sum=0
