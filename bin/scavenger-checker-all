@@ -1,8 +1,4 @@
 #!/bin/bash
-#sinfo -M industry -p scavenger --states=idle --format="I %n %Y %m %f"|tail -n+3
-#sinfo -M chemistry -p scavenger --states=idle --format="C %n %Y %m %f"|tail -n+3
-#sinfo -M mae -p scavenger --states=idle --format="M %n %Y %m %f"|tail -n+3
-#sinfo -M physics -p scavenger --states=idle --format="P %n %Y %m %f"|tail -n+3
 
 CLUSTERS="ub-hpc industry faculty"
 for i in $CLUSTERS; do
