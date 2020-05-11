@@ -90,8 +90,8 @@ else
   shift
 fi
 
-bPlus=`echo "$@" | grep ' --plus\|^--plus ' | wc -l`
-TheArgs=`echo "$@" | sed 's/^--plus //g' | sed 's/ --plus//g'`
+bPlus=`echo " $@ " | grep ' --plus\|^--plus ' | wc -l`
+TheArgs=`echo " $@ " | sed 's/^--plus //g' | sed 's/ --plus//g'`
 
 if [ "$TheGroup" == "all" ]; then
     TheGroup=`sacct --start=${StartDate} --allusers $TheArgs -ouser -n | \
@@ -102,6 +102,7 @@ if [ "$TheGroup" == "all" ]; then
              sed 's/,$//g'`
 fi
 TheList=`echo "$TheGroup" | tr ',' ' '`
+ListSize=`echo "$TheGroup" | tr ',' '\n' | wc -l`
 
 EndDate=`date +%m%d%y`
 
@@ -114,8 +115,14 @@ if [ "$SACCT_XFMT" != "" ]; then
   export SACCT_FORMAT="${SACCT_FORMAT},${SACCT_XFMT}"
 fi
 
-TMPFILE=/tmp/${TheGroup}_usage_logs_${StartDate}_to_${EndDate}.tmp.$$
-PLUSFILE=/tmp/${TheGroup}_usage_logs_${StartDate}_to_${EndDate}.plus.$$
+if [ "${ListSize}" == "1" ]; then
+  TheGroupName=${TheGroup}
+else
+  TheGroupName=multiple_users
+fi
+
+TMPFILE=/tmp/${TheGroupName}_usage_logs_${StartDate}_to_${EndDate}.tmp.$$
+PLUSFILE=/tmp/${TheGroupName}_usage_logs_${StartDate}_to_${EndDate}.plus.$$
 #OUTFILE=${TheGroup}_usage_logs_${StartDate}_to_${EndDate}.txt
 
 #echo $SACCT_HEADER > $TMPFILE
@@ -135,12 +142,12 @@ done
 #cat $TMPFILE | sed "s/T/ /g" | tee $OUTFILE
 
 if [ "$bPlus" == "1" ]; then
- cat $TMPFILE | sed "s/T/ /g" | grep '\.batch\|^               JobID'| sed 's/ otalCPU/TotalCPU/g' > $PLUSFILE
+ cat $TMPFILE | sed 's/\([0-9]\)T\([0-9]\)/\1 \2/g' | grep '\.batch\|^               JobID' > $PLUSFILE
  # echo "$SLOGPLUS $PLUSFILE"
  $SLOGPLUS $PLUSFILE
  mv $PLUSFILE `pwd`
 else
-  cat $TMPFILE | sed "s/T/ /g"
+  cat $TMPFILE | sed 's/\([0-9]\)T\([0-9]\)/\1 \2/g'
 fi
 
 rm $TMPFILE

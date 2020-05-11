@@ -1,0 +1,178 @@
+#!/bin/bash
+
+# determine STUBL install location
+# Copied from Apache Ant:
+# https://git-wip-us.apache.org/repos/asf?p=ant.git;a=blob;f=src/script/ant;h=b5ed5be6a8fe3a08d26dea53ea0fb3f5fab45e3f
+if [ -z "$STUBL_HOME" -o ! -d "$STUBL_HOME" ] ; then
+  ## resolve links - $0 may be a link to stubl's home
+  PRG="$0"
+  progname=`basename "$0"`
+
+  # need this for relative symlinks
+  while [ -h "$PRG" ] ; do
+    ls=`ls -ld "$PRG"`
+    link=`expr "$ls" : '.*-> \(.*\)$'`
+    if expr "$link" : '/.*' > /dev/null; then
+    PRG="$link"
+    else
+    PRG=`dirname "$PRG"`"/$link"
+    fi
+  done
+
+  STUBL_HOME=`dirname "$PRG"`/..
+
+  # make it fully qualified
+  STUBL_HOME=`cd "$STUBL_HOME" > /dev/null && pwd`
+fi
+
+# setup STUBL environment
+. $STUBL_HOME/conf/stubl
+
+if [ "$1" == "--help" ]; then
+  echo " "
+  echo "================================================"
+  echo "sranks+                                         "
+  echo " "
+  echo "    Display the ranks of pending SLURM jobs.    "
+  echo "    Like sranks but includes job names.         "
+  echo " "
+  echo "    Usage:                                      "
+  echo "      sranks+ [--clusters=cluster] [--raw|full] "
+  echo " "
+  echo "          --raw : don't take into account       "
+  echo "                  scheduler configuration, just "
+  echo "                  priorities.                   "
+  echo " "
+  echo "         --full : display all pending jobs but  "
+  echo "                  mark those not considered by  "
+  echo "                  the scheduler.                "
+  echo "================================================"
+  echo " "
+  exit
+fi
+
+cArg=`echo $@ | tr ' ' '\n' | grep '\-\-clusters'`
+
+arg1=`echo $@ | tr ' ' '\n' | grep '\-\-raw'`
+if [ "$arg1" == "" ]; then
+  arg1=`echo $@ | tr ' ' '\n' | grep '\-\-full'`
+fi
+
+echo "RANK  USER       JOBID   _NAME_OF_JOB_  PRIORITY   _____COMPONENTS_OF_TOTAL_PRIORITY_______"
+echo "====  ========  =======  =============  ========    AGE   FSHARE  JOBSIZ  PARTITION     QOS"
+
+# ---------------------------------------------------------------------------
+# raw ranks don't take into account scheduler configuration, just priorities.
+# ---------------------------------------------------------------------------
+if [ "$arg1" == "--raw" ]; then
+  TMPFILE=$STUBL_TMP_DIR/sranks.$$
+  sprio $cArg -h -o "%u %i %Y %A %F %J %P %Q" 2>/dev/null | grep -v "^CLUSTER" |
+        sort -gr -k3 | 
+        awk '{ printf("%4d  %-8s  %-7s  ___%s___  %8s  %6s  %6s  %6s  %9s  %6s\n", NR-1, $1,$2,$2,$3,$4,$5,$6,$7,$8); }' > $TMPFILE
+  while read -r line; do 
+    jid=`echo $line | awk '{ print $3 }'`
+    jname=`squeue -h --job $jid -o %13j 2>/dev/null | sed 's:/:_:g'`
+    if [ "$jname" == "" ]; then
+      jname="-------------"
+    fi
+    echo "$line" | sed "s/___${jid}___/$jname/g" |
+      awk '{ printf("%4d  %-8s  %-7s  %13s  %8s  %6s  %6s  %6s  %9s  %6s\n", $1,$2,$3,$4,$5,$6,$7,$8,$9,$10); }'
+  done < $TMPFILE
+
+  rm -f $TMPFILE
+
+# ---------------------------------------------------------------------------
+# The "full" pending option will include all jobs in the displayed list but 
+# will mark those not considered by the scheduler.
+# ---------------------------------------------------------------------------
+elif [ "$arg1" == "--full" ]; then
+  TMPFILE=$STUBL_TMP_DIR/sranks.$$
+  UNRFILE=$STUBL_TMP_DIR/unrank.$$
+  OUTFILE=$STUBL_TMP_DIR/outfil.$$
+
+  JOBS_PER_USER=`cat $STUBL_SLURM_CONF | \
+               grep 'SchedulerParameters=' | \
+               sed 's/SchedulerParameters=//g' | \
+               tr ',' '\n' | \
+               grep 'bf_max_job_user' | \
+               cut -d'=' -f2`
+
+  userList=`sprio $cArg -h -o "%u" 2>/dev/null | grep -v "^CLUSTER" | sort -u | tr '\n' ' '`
+
+  rm -f $TMPFILE
+
+  sprio $cArg -h -o "%u %i %Y %A %F %J %P %Q" 2>/dev/null | grep -v "^CLUSTER" | sort -gr -k3 > $UNRFILE
+
+  for i in $userList; do
+    grep $i $UNRFILE | head -n${JOBS_PER_USER} >> $TMPFILE
+  done
+
+  # assemble ranked jobs
+  if [ -f $TMPFILE ]; then
+    cat $TMPFILE |
+      sort -gr -k3 |
+      awk '{ printf("%4d  %-8s  %-7s  ___%s___  %8s  %6s  %6s  %6s  %9s  %6s\n", NR-1, $1,$2,$2,$3,$4,$5,$6, $7,$8); }' > $OUTFILE
+
+    # tack on unranked jobs
+    grep -v -x -f $TMPFILE $UNRFILE |
+      awk '{ printf("----  %-8s  %-7s  ___%s___  %8s  %6s  %6s  %6s  %9s  %6s\n", $1,$2,$2,$3,$4,$5,$6,$7,$8); }' >> $OUTFILE
+
+    # sort results
+    cat $OUTFILE | sort -k5rg,5 -k3rg,3 > $TMPFILE
+
+    while read -r line; do
+      jid=`echo $line | awk '{ print $3 }'`
+      jname=`squeue -h --job $jid -o %13j 2>/dev/null | sed 's:/:_:g'`
+      if [ "$jname" == "" ]; then
+        jname="-------------"
+      fi
+      echo "$line" | sed "s/___${jid}___/$jname/g" |
+        awk '{ printf("%4s  %-8s  %-7s  %13s  %8s  %6s  %6s  %6s  %9s  %6s\n", $1,$2,$3,$4,$5,$6,$7,$8,$9,$10); }'
+    done < $TMPFILE
+  fi
+  rm -f $OUTFILE
+  rm -f $TMPFILE
+  rm -f $UNRFILE
+# ---------------------------------------------------------------------------
+# Default behavior is to only display the top jobs of each user. They are the
+# only ones considered by the scheduler.
+#----------------------------------------------------------------------------
+else
+  TMPFILE=$STUBL_TMP_DIR/sranks.$$
+  OUTFILE=$STUBL_TMP_DIR/outfil.$$
+
+  JOBS_PER_USER=`cat $STUBL_SLURM_CONF | \
+               grep 'SchedulerParameters=' | \
+               sed 's/SchedulerParameters=//g' | \
+               tr ',' '\n' | \
+               grep 'bf_max_job_user' | \
+               cut -d'=' -f2`
+
+  userList=`sprio $cArg -h -o "%u" 2>/dev/null | grep -v "^CLUSTER" | sort -u | tr '\n' ' '`
+
+  rm -f $TMPFILE
+
+  for i in $userList; do
+    sprio $cArg -h --user=$i -o "%u %i %Y %A %F %J %P %Q" 2>/dev/null | grep -v "^CLUSTER" | sort -gr -k3 | head -n${JOBS_PER_USER} >> $TMPFILE
+  done
+
+  if [ -f $TMPFILE ]; then
+    cat $TMPFILE |
+      sort -gr -k3 |
+      awk '{ printf("%4d  %-8s  %-7s  ___%s___  %8s  %6s  %6s  %6s  %9s  %6s\n", NR-1, $1,$2,$2,$3,$4,$5,$6, $7,$8); }' > $OUTFILE
+  fi
+
+  while read -r line; do
+    jid=`echo $line | awk '{ print $3 }'`
+    jname=`squeue -h --job $jid -o %13j 2>/dev/null | sed 's:/:_:g'`
+    if [ "$jname" == "" ]; then
+      jname="-------------"
+    fi
+    echo "$line" | sed "s/___${jid}___/$jname/g" |
+      awk '{ printf("%4s  %-8s  %-7s  %13s  %8s  %6s  %6s  %6s  %9s  %6s\n", $1,$2,$3,$4,$5,$6,$7,$8,$9,$10); }'
+  done < $OUTFILE
+
+  rm -f $TMPFILE
+  rm -f $OUTFILE
+fi
+
