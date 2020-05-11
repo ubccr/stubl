@@ -54,12 +54,12 @@ for ((c=0; c < ${#CLUSTERS[@]}; c++ )); do
   cluster=${CLUSTERS[$c]}
   account=${ACCOUNTS[$c]}
 
-  # echo " "
-  # echo "Cluster = $cluster , Account = $account"
+  #echo " "
+  #echo "Cluster = $cluster , Account = $account"
 
   # get list of qos entries for the user for the given cluster, pad them with '_' to prevent substring matches later in the script
   echo -n "."
-  qosList=`cat $SACCTFILE | grep "^${cluster}|${account}|${TheUser}" | cut -d'|' -f17 | sed 's/,/_ _/g' | sed 's/^/_/g' | sed 's/$/_/g'`
+  qosList=`cat $SACCTFILE | grep "^${cluster}|${account}|${TheUser}" | cut -d'|' -f18 | sed 's/,/_ _/g' | sed 's/^/_/g' | sed 's/$/_/g'`
   # echo "qosList = $qosList"
 
   # get list of partitions for the given cluster
@@ -68,8 +68,13 @@ for ((c=0; c < ${#CLUSTERS[@]}; c++ )); do
 
   # add on supporters and any other non-partition qos entries
   if [ "$cluster" == "ub-hpc" ]; then
-    PARTITIONS="$PARTITIONS _supporters_"
+    PARTITIONS="$PARTITIONS _supporters_ _gpu2_ _nih_ _nihsupport_ _mri_ _mrisupport_"
+  elif [ "$cluster" == "industry" ]; then
+    PARTITIONS="$PARTITIONS _sentient_"
+  elif [ "$cluster" == "mae" ]; then
+    PARTITIONS="$PARTITIONS _thermo_"
   fi
+
   # echo "PARTITIONS = $PARTITIONS"
 
   # compare qosList against partitions list, retain a list of matches

@@ -1,0 +1,12 @@
+#!/bin/bash
+
+CLUSTERS="ub-hpc industry faculty"
+for i in $CLUSTERS; do
+  echo "All nodes on the $i cluster:"
+  echo 
+  echo " # OF NODES | # CORES |  MEMORY (mb)  | FEATURE"
+  echo "======================================================"
+  sinfo -M $i -p scavenger --format="    %4D    |   %2c    |    %7m    | %50f"|tail -n+3|sed 's/,/\&/g'
+  echo
+done
+

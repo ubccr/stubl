@@ -81,13 +81,13 @@ option=`echo $1 | cut -d= -f1`
 if [ "$option" == "--group" ]; then
   acct=""
   grp=`echo $1 | cut -d= -f2`
-  ssh -q rush "export STUBL_HOME=$STUBL_HOME; $LISTGROUP $grp" | grep -v $USEREXCLUDE | awk '{ print $2 }' > tmp1
+  ssh -q vortex "export STUBL_HOME=$STUBL_HOME; $LISTGROUP $grp" | grep -v $USEREXCLUDE | awk '{ print $2 }' > tmp1
   ssh -q presto "export STUBL_HOME=$STUBL_HOME; $LISTGROUP $grp" | grep -v $USEREXCLUDE | awk '{ print $2 }' >> tmp1
   userList=`sort -u tmp1 | tr '\n' ' '`
   rm -f tmp1
 elif [ "$option" == "--account" ]; then
   acct=`echo $1 | cut -d= -f2`
-  ssh -q rush "sacctmgr show associations account=$acct format=Cluster,Account,User" | awk '{ print $3 }' | sed -n '4,$p' | sort -u | grep -v '^$' > tmp1
+  ssh -q vortex "sacctmgr show associations account=$acct format=Cluster,Account,User" | awk '{ print $3 }' | sed -n '4,$p' | sort -u | grep -v '^$' > tmp1
   ssh -q presto "sacctmgr show associations account=$acct format=Cluster,Account,User" | awk '{ print $3 }' | sed -n '4,$p' | sort -u | grep -v '^$' >> tmp1
   userList=`sort -u tmp1 | tr '\n' ' '`
   rm -f tmp1
@@ -105,7 +105,7 @@ elif [ "$option" == "--user" ]; then
 else
   acct=""
   grp=$1
-  ssh -q rush "export STUBL_HOME=$STUBL_HOME; $LISTGROUP $grp" | grep -v $USEREXCLUDE | awk '{ print $2 }' > tmp1
+  ssh -q vortex "export STUBL_HOME=$STUBL_HOME; $LISTGROUP $grp" | grep -v $USEREXCLUDE | awk '{ print $2 }' > tmp1
   ssh -q presto "export STUBL_HOME=$STUBL_HOME; $LISTGROUP $grp" | grep -v $USEREXCLUDE | awk '{ print $2 }' >> tmp1
   userList=`sort -u tmp1 | tr '\n' ' '`
   rm -f tmp1
@@ -117,14 +117,14 @@ grandSum=0
 sum=0
 for u in $userList; do
   # for HH:MM:SS job times
-  nhrs=`ssh -q rush "module load stubl; slogs $start $u -X $acct" | awk '{ print $6,":",$3; }' | grep '^[0-9]' | grep -v '-' | awk -F: '{ printf("%lf\n", $4*($1+($2/60)+($3/3600))); }' | awk '{ sum+=$1} END {print sum}'`
+  nhrs=`ssh -q vortex "module load stubl; slogs $start $u -X $acct" | awk '{ print $6,":",$3; }' | grep '^[0-9]' | grep -v '-' | awk -F: '{ printf("%lf\n", $4*($1+($2/60)+($3/3600))); }' | awk '{ sum+=$1} END {print sum}'`
   sum=`echo "$sum $nhrs" | awk '{ printf("%lf\n", $1+$2); }'`
 
   # for DD-HH:MM:SS job times
-  nhrs=`ssh -q rush "module load stubl; slogs $start $u -X $acct" | awk '{ print $6,":",$3; }' | grep '^[0-9]' | grep '-' | sed 's/-/:/g' | awk -F: '{ printf("%lf\n", $5*(($1*24)+$2+($3/60)+($4/3600))); }' | awk '{ sum+=$1} END {print sum}'`
+  nhrs=`ssh -q vortex "module load stubl; slogs $start $u -X $acct" | awk '{ print $6,":",$3; }' | grep '^[0-9]' | grep '-' | sed 's/-/:/g' | awk -F: '{ printf("%lf\n", $5*(($1*24)+$2+($3/60)+($4/3600))); }' | awk '{ sum+=$1} END {print sum}'`
   sum=`echo "$sum $nhrs" | awk '{ printf("%lf\n", $1+$2); }'`
 done
-echo "CPU hours on rush since $start : $sum"
+echo "CPU hours on vortex since $start : $sum"
 grandSum=$sum
 
 sum=0

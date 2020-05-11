@@ -1,0 +1,25 @@
+#!/bin/bash
+
+if [ "$1" == "all" ]
+then 
+ ARGS="-a" 
+ WHOAMI="everyone"
+else if [ $# -gt 0 ]
+then 
+  WHOAMI="$1"
+  ARGS="-u $1"
+else
+  WHOAMI=`/usr/bin/whoami`
+  ARGS="-u `/usr/bin/whoami`"
+fi
+fi
+
+CLUSTERS="ub-hpc industry faculty"
+for i in $CLUSTERS; do
+  echo "Jobs for $WHOAMI:"
+  squeue  -M $i -p scavenger $ARGS -o  "%.18i %.10P %.15j %.8u %.2t %.10M %.6D %R"
+  echo
+  echo "To delete your jobs above use: scancel -M $i <jobid>" 
+  echo
+done
+

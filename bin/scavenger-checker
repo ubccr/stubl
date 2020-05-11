@@ -4,13 +4,13 @@
 #sinfo -M mae -p scavenger --states=idle --format="M %n %Y %m %f"|tail -n+3
 #sinfo -M physics -p scavenger --states=idle --format="P %n %Y %m %f"|tail -n+3
 
-CLUSTERS="industry chemistry mae physics"
+CLUSTERS="ub-hpc industry faculty"
 for i in $CLUSTERS; do
   echo "Available nodes on the $i cluster:"
   echo 
-  echo " # OF NODES | # CORES |  MEMORY (mb)  | TAGS"
+  echo " # OF NODES | # CORES |  MEMORY (mb)  | FEATURES"
   echo "======================================================"
-  sinfo -M $i -p scavenger --states=idle --format="    %4D    |   %2c    |    %7m    | %20f"|tail -n+3
+  sinfo -M $i -p scavenger --states=idle --format="    %4D    |   %2c    |    %7m    | %50f"|tail -n+3|sed 's/,/\&/g'
   echo
 done
 

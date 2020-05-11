@@ -111,18 +111,21 @@ if [ "$qos" == "" ]; then
   ARGS="$@ --qos=$qos"
 fi
 
-# check for node maintenance
-c1=`snodes all ${cluster}/${partition} | wc -l`
-c1=`expr $c1 - 1`
-d1=`snodes all ${cluster}/${partition} | grep down | wc -l`
-c2=`snodes all ${cluster}/${partition} | grep maint | wc -l`
-c3=`expr $d1 + $c2`
-#echo "Total number of nodes in ${cluster}/${partition} = $c1"
-#echo "Number of nodes in ${cluster}/${partition} that are under maintenance = $c2"
-#echo "Number of nodes in  ${cluster}/${partition} that are down = $d1"
-if [ "$c1" == "$c3" ]; then
-  echo "All nodes in  ${cluster}/${partition} are down or undergoing maintenance!"
-  exit
+# check for node maintenance unless submitted to a reservation
+bReservation=`echo $@ | tr ' ' '\n' | grep "\-\-reservation=" | cut -d'=' -f2`
+if [ "bReservation" == "" ]; then
+  c1=`snodes all ${cluster}/${partition} | wc -l`
+  c1=`expr $c1 - 1`
+  d1=`snodes all ${cluster}/${partition} | grep down | wc -l`
+  c2=`snodes all ${cluster}/${partition} | grep maint | wc -l`
+  c3=`expr $d1 + $c2`
+  #echo "Total number of nodes in ${cluster}/${partition} = $c1"
+  #echo "Number of nodes in ${cluster}/${partition} that are under maintenance = $c2"
+  #echo "Number of nodes in  ${cluster}/${partition} that are down = $d1"
+  if [ "$c1" == "$c3" ]; then
+    echo "All nodes in  ${cluster}/${partition} are down or undergoing maintenance!"
+    exit
+  fi
 fi
 
 # Submit the job and get the job id

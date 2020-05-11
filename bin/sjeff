@@ -51,7 +51,7 @@ for job in $jobList; do
   jobInfo=`squeue -h $@ --job=$job --state='R' 2>/dev/null | grep -v CLUSTER`
   # guard against multiple results, as can happen with job arrays
   njobs=`squeue -h $@ --job=$job --state='R' 2>/dev/null | grep -v CLUSTER | wc -l`
-  
+ 
   if [ "$jobInfo" == "" -a "$1" != "--all" ]; then
     echo "Invalid job ID ($job)"
   elif [ "$njobs" != "1" ]; then
@@ -104,7 +104,7 @@ for job in $jobList; do
     effcpu=`echo $eff $ncpus | awk '{ printf("%0.2lf\n", $1 * $2 / 100); }'`
 
     # accumulate memory usage of each node, read peak memory usage from cgroup file
-    memsum=`clush -w $nodelist -N "cat /cgroup/memory/slurm/uid_${uid}/job_${job}/memory.max_usage_in_bytes" 2>/dev/null | awk '{ sum+=$1} END {print sum}'`
+    memsum=`clush -w $nodelist -N "cat /sys/fs//cgroup/memory/slurm/uid_${uid}/job_${job}/memory.max_usage_in_bytes" 2>/dev/null | awk '{ sum+=$1} END {print sum}'`
 
     # mem usage per node
     if [ "memsum" != "" ]; then
@@ -112,7 +112,7 @@ for job in $jobList; do
       memsum=`echo "$memsum / $nnodes" | bc -l | awk '{ printf("%0.2lfGn", $1/1E9); }'`
     fi
 
-   # test for poor efficiency (<50%)
+    # test for poor efficiency (<50%)
     bRed=`echo "$eff < 50" | bc -l`
     if [ "$bRed" == "0" ]; then    
       echo "$job $user $eff $effcpu $ncpus $mreq $memsum" | awk '{ printf("%-8s  %-8s  %-11s  %-11s   = %10s%%  (%s of %s)\n", $1, $2, $6, $7, $3, $4, $5); }'
