@@ -57,16 +57,16 @@ if [ "$arg1" == "" ]; then
   arg1=`echo $@ | tr ' ' '\n' | grep '\-\-full'`
 fi
 
-echo "RANK  USER      JOBID   PRIORITY   ____COMPONENTS_OF_TOTAL_PRIORITY_____"
-echo "====  ========  ======  ========    AGE   FSHARE  JOBSIZ  PARTITION  QOS"
+echo "RANK  USER      JOBID   PRIORITY       _______COMPONENTS_OF_TOTAL_PRIORITY________"
+echo "====  ========  ======  ========        AGE   FSHARE  JOBSIZ  PARTITION  QOS  TRES"
 
 # ---------------------------------------------------------------------------
 # raw ranks don't take into account scheduler configuration, just priorities.
 # ---------------------------------------------------------------------------
 if [ "$arg1" == "--raw" ]; then
-  sprio $cArg -h -o "%u %i %Y %A %F %J %P %Q" | grep -v "^CLUSTER" |
+  sprio $cArg -h -o "%u %i %Y %A %F %J %P %Q %T" | grep -v "^CLUSTER" |
         sort -gr -k3 | 
-        awk '{ printf("%4d  %-8s  %-6s  %8s  %6s  %6s  %6s  %9s  %3s\n", NR-1, $1,$2,$3,$4,$5,$6,$7,$8); }' 
+        awk '{ printf("%4d  %-8s  %-6s  %8s  %6s  %6s  %6s  %9s  %3s\n", NR-1, $1,$2,$3,$4,$5,$6,$7,$8,$9); }' 
 # ---------------------------------------------------------------------------
 # The "full" pending option will include all jobs in the displayed list but 
 # will mark those not considered by the scheduler.
@@ -97,11 +97,11 @@ elif [ "$arg1" == "--full" ]; then
   if [ -f $TMPFILE ]; then
     cat $TMPFILE |
       sort -gr -k3 |
-      awk '{ printf("%4d  %-8s  %-6s  %8s  %6s  %6s  %6s  %9s  %3s\n", NR-1, $1,$2,$3,$4,$5,$6, $7,$8); }' > $OUTFILE
+      awk '{ printf("%4d  %-8s  %-6s  %8s  %6s  %6s  %6s  %9s  %3s %9s\n", NR-1, $1,$2,$3,$4,$5,$6, $7,$8,$9); }' > $OUTFILE
 
     # tack on unranked jobs
     grep -v -x -f $TMPFILE $UNRFILE |
-      awk '{ printf("----  %-8s  %-6s  %8s  %6s  %6s  %6s  %9s  %3s\n", $1,$2,$3,$4,$5,$6,$7,$8); }' >> $OUTFILE
+      awk '{ printf("----  %-8s  %-6s  %8s  %6s  %6s  %6s  %9s  %3s %9s\n", $1,$2,$3,$4,$5,$6,$7,$8,$9); }' >> $OUTFILE
 
     # display sorted results
     cat $OUTFILE | sort -k4rg,4 -k3rg,1
@@ -128,13 +128,13 @@ else
   rm -f $TMPFILE
 
   for i in $userList; do
-    sprio $cArg -h --user=$i -o "%u %i %Y %A %F %J %P %Q" | grep -v "^CLUSTER" | sort -gr -k3 | head -n${JOBS_PER_USER} >> $TMPFILE
+    sprio $cArg -h --user=$i -o "%u %i %Y %A %F %J %P %Q %T" | grep -v "^CLUSTER" | sort -gr -k3 | head -n${JOBS_PER_USER} >> $TMPFILE
   done
 
   if [ -f $TMPFILE ]; then
     cat $TMPFILE |
       sort -gr -k3 |
-      awk '{ printf("%4d  %-8s  %-6s  %8s  %6s  %6s  %6s  %9s  %3s\n", NR-1, $1,$2,$3,$4,$5,$6, $7,$8); }' 
+      awk '{ printf("%4d  %-8s  %-6s  %8s  %6s  %6s  %6s  %9s  %3s %9s\n", NR-1, $1,$2,$3,$4,$5,$6, $7,$8,$9); }' 
   fi
 
   rm -f $TMPFILE
