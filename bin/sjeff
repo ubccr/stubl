@@ -58,9 +58,9 @@ for job in $jobList; do
     :
   else
     #user=`echo $jobInfo | awk '{ print $4 }'`
-    user=`squeue -h $@ --job=3093131 --state='R' 2>/dev/null -o %u | grep -v CLUSTER`
+    user=`squeue -h $@ --job=$job --state='R' 2>/dev/null -o %u | grep -v CLUSTER`
     #uid=`id -u $user`
-    uid=`squeue -h $@ --job=3093131 --state='R' 2>/dev/null -o %U | grep -v CLUSTER`
+    uid=`squeue -h $@ --job=$job --state='R' 2>/dev/null -o %U | grep -v CLUSTER`
     nodelist=`echo $jobInfo | awk '{ print $8 }'`
     nodelist=`nodeset -e $nodelist | tr ' ' ','`
 
