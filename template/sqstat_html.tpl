@@ -7,17 +7,7 @@
 img {
   width: 100%;
 }
-</style>
-</head>
-<body>
 
-<img src="ccr.jpg" alt="HTML5 Icon" style="width:1200px;height:200px;">
-
-</body>
-</html>
-
-
-<br>
 <br>
 <br>
 <br>
@@ -46,7 +36,7 @@ h1{
     display: inline-block;
     font-weight: 100;
     text-align: center;
-    font-size: 30px;
+    font-size: 20px;
 }
 #clockdiv > div{
     padding: 10px;
@@ -61,8 +51,10 @@ h1{
     display: inline-block;
 }
 smalltext{
-    padding-top: 5px;
-    font-size: 16px;
+    padding-top: 2.5px;
+    font-size: 5px;
+	'width':390,
+        'height':200
 }
 </style>
 </head>
@@ -90,7 +82,7 @@ smalltext{
 <p id="demo"></p>
 
 
-    <!-- Enter next downtime date, year, and time here -->
+    <!-- Auto Updating downtime clock -->
 <script>
 
 var x = setInterval(function() {
@@ -180,6 +172,8 @@ if (t < 0) {
           title: 'Current job status(%):',
           pieHole: 0.4,
         colors: ['#005bbb', '#666666'],
+	'width':390,
+        'height':200
         };
 
         // Instantiate and draw the Doughnut 1 Chart
@@ -201,7 +195,9 @@ if (t < 0) {
          var options = {
           title: 'Total Core Usage(%):',
           pieHole: 0.4,
-        colors: ['#005bbb', '#666666']
+        colors: ['#005bbb', '#666666'],
+	'width':390,
+        'height':200
         };
 
         // Instantiate and draw the Doughnut  Chart
@@ -225,6 +221,8 @@ if (t < 0) {
           title: 'Total Node Usage(%):',
           pieHole: 0.4,
             colors: ['#005bbb', '#666666'],
+	'width':390,
+         'height':200
         };
 
         // Instantiate and draw the Doughnut 3 Chart
@@ -250,7 +248,6 @@ if (t < 0) {
 
 <! End Of Doughnut Chart Script -->
 
-<br>
 <br>
 
 
