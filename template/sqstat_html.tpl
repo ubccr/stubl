@@ -1,25 +1,12 @@
-
-<!DOCTYPE html>
-<html>
-<head>
-<style>
-/* This stylesheet sets the width of all images to 100%: */
-img {
-  width: 100%;
-}
-
-<br>
-<br>
-<br>
-
 <!-- Code for Downtime maintainance Timer -->
 
 <!DOCTYPE HTML>
 <html>
 <head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 body{
-    text-align: center;
+    text-align: left;
     background: #fff;
   font-family: sans-serif;
   font-weight: 100;
@@ -142,6 +129,7 @@ if (t < 0) {
 
 <html>
   <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
     <script type="text/javascript">
 
@@ -224,6 +212,7 @@ if (t < 0) {
 
 <html>
   <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
     <script type="text/javascript">
 
