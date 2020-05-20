@@ -59,7 +59,7 @@ smalltext{
 </style>
 </head>
 <body>
-<h1>Countdown For Next Downtime Maintainance:</h1>
+<p style="font-size:20px">Countdown to next maintenance downtime:</p>
 <div id="clockdiv">
   <div>
     <span class="days" id="day"></span>
@@ -153,9 +153,7 @@ if (t < 0) {
 
       // Draw the Doughnut 2 chart
       google.charts.setOnLoadCallback(drawDoughnut2Chart);
-        
-    // Draw the Doughnut 3 chart
-      google.charts.setOnLoadCallback(drawDoughnut3Chart);
+
 
       // Callback to draw the pie chart
       function drawDoughnut1Chart() {
@@ -205,7 +203,38 @@ if (t < 0) {
         chart.draw(data, options);
       }
         
+    </script>
+  </head>
+  <body>
+    <!--Table and divs that hold the pie charts-->
+    <table class="columns">
+      <tr>
+          <td><div id="Doughnut1" style="width: 420px; height: 300px;"></div></td> 
+        <td><div id="Doughnut2" style="width: 420px; height: 300px;"></div></td>
+      </tr>
+    </table>
+  </body>
+</html>
+
+<!-- End Of top two Doughnut Chart Script -->
+
+
+<!--third chart below other charts-->
+
+
+<html>
+  <head>
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script type="text/javascript">
+
+      // Load Charts and the corechart package.
+      google.charts.load('current', {'packages':['corechart']});
+
         
+    // Draw the Doughnut 3 chart
+      google.charts.setOnLoadCallback(drawDoughnut3Chart);
+
+                
         // Callback that draws the Doughnut 3 Chart
       function drawDoughnut3Chart() {
 
@@ -238,18 +267,20 @@ if (t < 0) {
     <!--Table and divs that hold the pie charts-->
     <table class="columns">
       <tr>
-          <td><div id="Doughnut1" style="width: 420px; height: 300px;"></div></td> 
-        <td><div id="Doughnut2" style="width: 420px; height: 300px;"></div></td>
           <td><div id="Doughnut3" style="width: 420px; height: 300px;"></div></td>
       </tr>
     </table>
   </body>
 </html>
 
-<! End Of Doughnut Chart Script -->
+<!-- End Of Doughnut Chart Script -->
+
+
+
+<!--end chart-->
+
 
 <br>
-
 
 
 <!-- saved from url=(0022)http://internet.e-mail -->
