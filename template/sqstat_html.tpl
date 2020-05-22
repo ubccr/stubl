@@ -1,9 +1,9 @@
 <!-- Code for Downtime maintainance Timer -->
 
-<!DOCTYPE HTML>
-<html>
-<head>
+
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+
 <style>
 body{
     text-align: left;
@@ -44,8 +44,9 @@ smalltext{
         'height':200
 }
 </style>
-</head>
-<body>
+
+    
+
 <p style="font-size:20px">Countdown to next maintenance downtime:</p>
 <div id="clockdiv">
   <div>
@@ -114,8 +115,8 @@ if (t < 0) {
         document.getElementById("second").innerHTML = '0'; }
 }, 1000);
 </script>
-</body>
-</html>
+
+
 
 <!-- End of code for Countdown Timer -->
 
@@ -127,9 +128,7 @@ if (t < 0) {
 
 <!-- Start of Doughnut Chart Script --->
 
-<html>
-  <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
     <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
     <script type="text/javascript">
 
@@ -192,8 +191,7 @@ if (t < 0) {
       }
         
     </script>
-  </head>
-  <body>
+
     <!--Table and divs that hold the pie charts-->
     <table class="columns">
       <tr>
@@ -201,8 +199,8 @@ if (t < 0) {
         <td><div id="Doughnut2" style="width: 420px; height: 300px;"></div></td>
       </tr>
     </table>
-  </body>
-</html>
+
+
 
 <!-- End Of top two Doughnut Chart Script -->
 
@@ -210,9 +208,8 @@ if (t < 0) {
 <!--third chart below other charts-->
 
 
-<html>
-  <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    
     <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
     <script type="text/javascript">
 
@@ -251,16 +248,18 @@ if (t < 0) {
         
         
     </script>
-  </head>
-  <body>
+  
+
     <!--Table and divs that hold the pie charts-->
     <table class="columns">
       <tr>
           <td><div id="Doughnut3" style="width: 420px; height: 300px;"></div></td>
       </tr>
     </table>
-  </body>
-</html>
+ 
+
+
+    
 
 <!-- End Of Doughnut Chart Script -->
 
@@ -368,3 +367,7 @@ if (t < 0) {
  <tr><td>&nbsp;</td><td>_ALLNUSE_ (_PCTNUSE_%)</td><td>_ALLNUNU_ (_PCTNUNU_%)</td></tr>
 
 </table>
+
+    
+    
+
