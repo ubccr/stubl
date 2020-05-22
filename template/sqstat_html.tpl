@@ -6,7 +6,7 @@
 
 <style>
 body{
-    text-align: left;
+    text-align: center;
     background: #fff;
   font-family: sans-serif;
   font-weight: 100;
@@ -28,13 +28,13 @@ h1{
 #clockdiv > div{
     padding: 10px;
     border-radius: 3px;
-    background: #005bbb;
+    background: #666666;
     display: inline-block;
 }
 #clockdiv div > span{
     padding: 15px;
     border-radius: 3px;
-    background: #005bbb;
+    background: #666666;
     display: inline-block;
 }
 smalltext{
@@ -47,7 +47,7 @@ smalltext{
 
     
 
-<p style="font-size:20px">Countdown to next maintenance downtime:</p>
+<b><p style="font-size:20px">Countdown to next maintenance downtime:</p></b>
 <div id="clockdiv">
   <div>
     <span class="days" id="day"></span>
@@ -142,7 +142,12 @@ if (t < 0) {
       google.charts.setOnLoadCallback(drawDoughnut2Chart);
 
 
-      // Callback to draw the pie chart
+     // Draw the Doughnut 3 chart
+      google.charts.setOnLoadCallback(drawDoughnut3Chart); 
+        
+         
+        
+        // Callback to draw the doughnut chart
       function drawDoughnut1Chart() {
 
         // Create the data table for Doughnut 1 chart
@@ -190,35 +195,6 @@ if (t < 0) {
         chart.draw(data, options);
       }
         
-    </script>
-
-    <!--Table and divs that hold the pie charts-->
-    <table class="columns">
-      <tr>
-          <td><div id="Doughnut1" style="width: 420px; height: 300px;"></div></td> 
-        <td><div id="Doughnut2" style="width: 420px; height: 300px;"></div></td>
-      </tr>
-    </table>
-
-
-
-<!-- End Of top two Doughnut Chart Script -->
-
-
-<!--third chart below other charts-->
-
-
-
-    
-    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
-    <script type="text/javascript">
-
-      // Load Charts and the corechart package.
-      google.charts.load('current', {'packages':['corechart']});
-
-        
-    // Draw the Doughnut 3 chart
-      google.charts.setOnLoadCallback(drawDoughnut3Chart);
 
                 
         // Callback that draws the Doughnut 3 Chart
@@ -246,17 +222,16 @@ if (t < 0) {
       }
         
         
-        
     </script>
-  
 
     <!--Table and divs that hold the pie charts-->
     <table class="columns">
       <tr>
-          <td><div id="Doughnut3" style="width: 420px; height: 300px;"></div></td>
+          <td><div id="Doughnut1" style="width: 310px; height: 250px;"></div></td> 
+        <td><div id="Doughnut2" style="width: 310px; height: 250px;"></div></td>
+          <td><div id="Doughnut3" style="width: 310px; height: 250px;"></div></td>
       </tr>
     </table>
- 
 
 
     
