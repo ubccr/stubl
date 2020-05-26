@@ -121,11 +121,6 @@ if (t < 0) {
 <!-- End of code for Countdown Timer -->
 
 
-
-<br>
-<br>
-
-
 <!-- Start of Doughnut Chart Script --->
 
     
@@ -162,7 +157,7 @@ if (t < 0) {
           title: 'Current job status(%):',
           pieHole: 0.4,
         colors: ['#005bbb', '#666666'],
-	'width':390,
+	   'width':390,
         'height':200
         };
 
@@ -224,26 +219,11 @@ if (t < 0) {
         
     </script>
 
-    <!--Table and divs that hold the pie charts-->
-    <table class="columns">
-      <tr>
-          <td><div id="Doughnut1" style="width: 310px; height: 250px;"></div></td> 
-        <td><div id="Doughnut2" style="width: 310px; height: 250px;"></div></td>
-          <td><div id="Doughnut3" style="width: 310px; height: 250px;"></div></td>
-      </tr>
-    </table>
-
-
-    
-
 <!-- End Of Doughnut Chart Script -->
 
 
 
 <!--end chart-->
-
-
-<br>
 
 
 <!-- saved from url=(0022)http://internet.e-mail -->
@@ -287,9 +267,7 @@ if (t < 0) {
 	
 </tr>
 </table>
-
-<br/>
-
+<br>
 <p align="left">Summary of current jobs: </p>
 
 <table class="ccr-dtable">
@@ -305,8 +283,8 @@ if (t < 0) {
 <tr><td>&nbsp;</td><td>_ALLJRUN_ (_PCTJRUN_%)</td><td>_ALLJQUE_ (_PCTJQUE_%)</td><td>_ALLJTOT_</td></tr>
 
 </table>
-
-<br/>
+<td><div id="Doughnut1" ></div></td>
+<br>
 
 <p align="left">Summary of current core usage:</p>
 
@@ -324,9 +302,9 @@ if (t < 0) {
 <tr><td>&nbsp;</td><td>_ALLCTOT_</td><td>_ALLCUSE_ (_PCTCUSE_%)</td><td>_ALLCUNU_ (_PCTCUNU_%)</td><td>_ALLCOTH_</td></tr>
 
 </table>
+<td><div id="Doughnut2" ></div></td>
 
-
-<br/>
+<br>
 
 <p align="left">Summary of current node usage:</p>
 
@@ -342,7 +320,7 @@ if (t < 0) {
  <tr><td>&nbsp;</td><td>_ALLNUSE_ (_PCTNUSE_%)</td><td>_ALLNUNU_ (_PCTNUNU_%)</td></tr>
 
 </table>
-
+<td><div id="Doughnut3" ></div></td>
     
     
 
