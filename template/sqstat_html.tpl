@@ -268,9 +268,15 @@ if (t < 0) {
 </tr>
 </table>
 
-<br>
+
 
 <table class="columns">
+    
+<tr>
+<td>
+<br>    
+    
+    
 <p align="left">Summary of current jobs: </p>
 
 <table class="ccr-dtable">
@@ -286,9 +292,15 @@ if (t < 0) {
 <tr><td>&nbsp;</td><td>_ALLJRUN_ (_PCTJRUN_%)</td><td>_ALLJQUE_ (_PCTJQUE_%)</td><td>_ALLJTOT_</td></tr>
 
 </table>
+    </td>
 <td><div id="Doughnut1" ></div></td>
-<br>
+    </tr>
 
+    
+<tr>
+<td>
+<br>
+    
 <p align="left">Summary of current core usage:</p>
 
 <table class="ccr-dtable">
@@ -305,10 +317,16 @@ if (t < 0) {
 <tr><td>&nbsp;</td><td>_ALLCTOT_</td><td>_ALLCUSE_ (_PCTCUSE_%)</td><td>_ALLCUNU_ (_PCTCUNU_%)</td><td>_ALLCOTH_</td></tr>
 
 </table>
+    </td>
 <td><div id="Doughnut2" ></div></td>
+    </tr>
 
-<br>
-
+    
+<tr>
+<td>
+<br>    
+    
+    
 <p align="left">Summary of current node usage:</p>
 
 <table class="ccr-dtable">
@@ -323,7 +341,8 @@ if (t < 0) {
  <tr><td>&nbsp;</td><td>_ALLNUSE_ (_PCTNUSE_%)</td><td>_ALLNUNU_ (_PCTNUNU_%)</td></tr>
 
 </table>
+    </td>
 <td><div id="Doughnut3" ></div></td>
-    
+    </tr>
 </table>
 
