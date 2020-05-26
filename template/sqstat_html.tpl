@@ -267,7 +267,10 @@ if (t < 0) {
 	
 </tr>
 </table>
+
 <br>
+
+<table class="columns">
 <p align="left">Summary of current jobs: </p>
 
 <table class="ccr-dtable">
@@ -322,5 +325,5 @@ if (t < 0) {
 </table>
 <td><div id="Doughnut3" ></div></td>
     
-    
+</table>
 
