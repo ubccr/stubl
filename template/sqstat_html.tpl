@@ -46,6 +46,7 @@ smalltext{
 </style>
 
     
+<!-- Countdwon timer -->
 
 <b><p style="font-size:20px">Countdown to next maintenance downtime:</p></b>
 <div id="clockdiv">
@@ -70,7 +71,51 @@ smalltext{
 <p id="demo"></p>
 
 
-    <!-- Auto Updating downtime clock -->
+<!-- Manually updating Countdown timer (remove tags and add tags for auto updating timer) -->
+
+<!--
+
+
+<script>
+
+var deadline = new Date("jun 7, 2020 15:37:25").getTime();
+
+var x = setInterval(function() {
+
+var now = new Date().getTime();
+var t = deadline - now;
+var days = Math.floor(t / (1000 * 60 * 60 * 24));
+var hours = Math.floor((t%(1000 * 60 * 60 * 24))/(1000 * 60 * 60));
+var minutes = Math.floor((t % (1000 * 60 * 60)) / (1000 * 60));
+var seconds = Math.floor((t % (1000 * 60)) / 1000);
+document.getElementById("day").innerHTML =days ;
+document.getElementById("hour").innerHTML =hours;
+document.getElementById("minute").innerHTML = minutes;
+document.getElementById("second").innerHTML =seconds;
+if (t < 0) {
+        clearInterval(x);
+        document.getElementById("demo").innerHTML = "Downtime Maintainance in Progress...";
+        document.getElementById("day").innerHTML ='0';
+        document.getElementById("hour").innerHTML ='0';
+        document.getElementById("minute").innerHTML ='0' ;
+        document.getElementById("second").innerHTML = '0'; }
+}, 1000);
+</script>
+
+
+-->
+
+<!-- End of manually updating timer -->
+
+
+
+
+
+
+
+
+<!-- Auto Updating downtime clock -->
+
 <script>
 
 var x = setInterval(function() {
@@ -79,6 +124,7 @@ var now = new Date();
 
 var year = now.getFullYear();
 var month = now.getMonth();
+console.log(month)
 var lastDay = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 if (year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0)) 
 {
@@ -86,9 +132,16 @@ if (year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0))
 }
 var deadline = new Date()
 deadline.setFullYear(year, month, lastDay[month]);
+if((-deadline.getDay()-5)<=-7)
+{
+deadline.setDate(deadline.getDate() - deadline.getDay()-5+7)
+}
+else
+{
 deadline.setDate(deadline.getDate() - deadline.getDay()-5);
+}
 deadline.setHours(0,0,0,0);
-console.log(deadline)
+//console.log(deadline)
 if(now-deadline>=86400000)
 {
 	month=deadline.getMonth()+1;
@@ -118,7 +171,11 @@ if (t < 0) {
 
 
 
-<!-- End of code for Countdown Timer -->
+
+<!-- End of code for autoupdating Countdown Timer -->
+
+
+
 
 
 <!-- Start of Doughnut Chart Script --->
@@ -220,10 +277,8 @@ if (t < 0) {
     </script>
 
 <!-- End Of Doughnut Chart Script -->
-
-
-
 <!--end chart-->
+
 
 
 <!-- saved from url=(0022)http://internet.e-mail -->
