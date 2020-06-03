@@ -5,11 +5,9 @@
 
 
 <style>
-body{
-    text-align: center;
-    background: #fff;
-  font-family: sans-serif;
-  font-weight: 100;
+
+    div.a {
+  text-align: center;
 }
 h1{
   color: #000000;
@@ -47,7 +45,7 @@ smalltext{
 
     
 <!-- Countdwon timer -->
-
+<div class="a">
 <b><p style="font-size:20px">Countdown to next maintenance downtime:</p></b>
 <div id="clockdiv">
   <div>
@@ -69,7 +67,7 @@ smalltext{
 </div>
 
 <p id="demo"></p>
-
+</div>
 
 <!-- Manually updating Countdown timer (remove tags and add tags for auto updating timer) -->
 
@@ -282,7 +280,9 @@ if (t < 0) {
 
 
 <!-- saved from url=(0022)http://internet.e-mail -->
-<div style="color:red">Last updated: _DATE_</div>
+<br>
+<div style="color:red", align = "center">Last updated: _DATE_</div>
+<br>
 <style type="text/css">
 .ccr-dtable {
     border-collapse: collapse;
@@ -300,8 +300,9 @@ if (t < 0) {
 .ccr-dtable {
     text-align: right;
 }
+    
 </style>
-
+<br>
 <table class="ccr-dtable">
 <tr>
     <!--<th>Peak (TFlop/s)</th> -->
