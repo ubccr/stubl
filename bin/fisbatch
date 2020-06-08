@@ -178,7 +178,7 @@ export PYTHONPATH=$PYPATH
 export PYTHONHOME=$PYHOME
 
 for i in $NODE; do
-   screenTest=`ssh $i "ps -ef | grep $usr | grep \[S\]CREEN | wc -l"`
+   screenTest=`ssh $i "ps -A  -o pid,user:20,%cpu,%mem,comm,args | grep $usr | grep \[S\]CREEN | wc -l"`
    if [ "$screenTest" != "0" ]; then
       HNODE=$i
       break
