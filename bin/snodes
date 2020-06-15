@@ -78,17 +78,17 @@ fi
 # so use grep filter instead....
 if [ "$cluster" != "all" ]; then
   if [ "$3" == "mix" -o "$3" == "mixed" ]; then
-    sinfo $OPTIONS -o "%13n %8t %4c %8z %15C %8O %8m %12G %18P %f" | grep -v "^CLUSTER" | head -n1
-    sinfo $OPTIONS -o "%13n %8t %4c %8z %15C %8O %8m %12G %18P %f" | grep -v "^CLUSTER" | grep 'mix'
+    sinfo $OPTIONS -o "%13n %8t %4c %8z %15C %8O %8m %35G %18P %f" | grep -v "^CLUSTER" | head -n1
+    sinfo $OPTIONS -o "%13n %8t %4c %8z %15C %8O %8m %35G %18P %f" | grep -v "^CLUSTER" | grep 'mix'
   else
-    sinfo $OPTIONS -o "%13n %8t %4c %8z %15C %8O %8m %12G %18P %f" | grep -v "^CLUSTER"
+    sinfo $OPTIONS -o "%13n %8t %4c %8z %15C %8O %8m %35G %18P %f" | grep -v "^CLUSTER"
   fi
 else
   if [ "$3" == "mix" -o "$3" == "mixed" ]; then
-    sinfo $OPTIONS -o "%13n %8t %4c %8z %15C %8O %8m %12G %18P %f"  | head -n1
-    sinfo $OPTIONS -o "%13n %8t %4c %8z %15C %8O %8m %12G %18P %f"  | grep 'mix'
+    sinfo $OPTIONS -o "%13n %8t %4c %8z %15C %8O %8m %35G %18P %f"  | head -n1
+    sinfo $OPTIONS -o "%13n %8t %4c %8z %15C %8O %8m %35G %18P %f"  | grep 'mix'
   else
-    sinfo $OPTIONS -o "%13n %8t %4c %8z %15C %8O %8m %12G %18P %f" 
+    sinfo $OPTIONS -o "%13n %8t %4c %8z %15C %8O %8m %35G %18P %f" 
   fi
 fi
 
