@@ -14,7 +14,7 @@ else
 fi
 fi
 
-CLUSTERS="ub-hpc industry faculty"
+CLUSTERS="industry faculty ub-hpc"
 for i in $CLUSTERS; do
   echo "Jobs for $WHOAMI:"
   squeue  -M $i -p scavenger $ARGS -o  "%.18i %.10P %.15j %.8u %.2t %.10M %.6D %R"

@@ -1,5 +1,5 @@
 #!/bin/bash
-CLUSTERS="ub-hpc industry faculty"
+CLUSTERS="industry faculty ub-hpc"
 echo "You asked for the following:"
 echo
 cat $@|grep SBATCH|grep nodes
