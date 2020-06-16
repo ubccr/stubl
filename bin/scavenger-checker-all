@@ -1,6 +1,6 @@
 #!/bin/bash
 
-CLUSTERS="ub-hpc industry faculty"
+CLUSTERS="industry faculty ub-hpc"
 for i in $CLUSTERS; do
   echo "All nodes on the $i cluster:"
   echo 
