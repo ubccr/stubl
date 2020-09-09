@@ -118,7 +118,7 @@ var now = new Date();
 
 var year = now.getFullYear();
 var month = now.getMonth();
-console.log(month)
+//console.log(month)
 var lastDay = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 if (year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0)) 
 {
