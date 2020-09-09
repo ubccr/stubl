@@ -14,5 +14,4 @@ if [ "$DISPLAY" != "" ];then
     screen -p0 -S $SCREENSESSION -X kill
 fi
 
-exec screen -S $SCREENSESSION -rd 
-
+exec screen -A -S $SCREENSESSION -rd

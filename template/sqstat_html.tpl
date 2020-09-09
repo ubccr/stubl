@@ -109,11 +109,7 @@ if (t < 0) {
 
 
 
-
-
-
 <!-- Auto Updating downtime clock -->
-
 <script>
 
 var x = setInterval(function() {
@@ -126,7 +122,7 @@ var month = now.getMonth();
 var lastDay = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 if (year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0)) 
 {
-		lastDay[2] = 29;
+		lastDay[1] = 29;
 }
 var deadline = new Date()
 deadline.setFullYear(year, month, lastDay[month]);
@@ -142,7 +138,14 @@ deadline.setHours(0,0,0,0);
 //console.log(deadline)
 if(now-deadline>=86400000)
 {
-	month=deadline.getMonth()+1;
+	if (deadline.getMonth()==11)
+	{
+		month=0;
+	}
+	else
+	{
+		month=deadline.getMonth()+1;
+	}
 	deadline.setFullYear(year, month, lastDay[month]);
 	deadline.setDate(deadline.getDate() - deadline.getDay()-5);
 	//console.log(deadline)
@@ -169,10 +172,7 @@ if (t < 0) {
 
 
 
-
-<!-- End of code for autoupdating Countdown Timer -->
-
-
+<!-- End of code for Countdown Timer -->
 
 
 
