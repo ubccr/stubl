@@ -51,5 +51,5 @@ fi
 
 SQELP=$STUBL_HOME/bin/squeue_helper.pl
 
-squeue -o "%.6i %.10B %.16P %.8u %.8a %.7m(M) %.4C %.10p %.8f %.19S %.11M %.2t %15j" "$@" | sort -n | $SQELP
+$STUBL_SQUEUE -o "%.6i %.10B %.16P %.8u %.8a %.7m(M) %.4C %.10p %.8f %.19S %.11M %.2t %15j" "$@" | sort -n | $SQELP
 

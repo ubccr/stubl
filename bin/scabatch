@@ -1,4 +1,33 @@
 #!/bin/bash
+
+# determine STUBL install location
+# Copied from Apache Ant:
+# https://git-wip-us.apache.org/repos/asf?p=ant.git;a=blob;f=src/script/ant;h=b5ed5be6a8fe3a08d26dea53ea0fb3f5fab45e3f
+if [ -z "$STUBL_HOME" -o ! -d "$STUBL_HOME" ] ; then
+  ## resolve links - $0 may be a link to stubl's home
+  PRG="$0"
+  progname=`basename "$0"`
+
+  # need this for relative symlinks
+  while [ -h "$PRG" ] ; do
+    ls=`ls -ld "$PRG"`
+    link=`expr "$ls" : '.*-> \(.*\)$'`
+    if expr "$link" : '/.*' > /dev/null; then
+    PRG="$link"
+    else
+    PRG=`dirname "$PRG"`"/$link"
+    fi
+  done
+
+  STUBL_HOME=`dirname "$PRG"`/..
+
+  # make it fully qualified
+  STUBL_HOME=`cd "$STUBL_HOME" > /dev/null && pwd`
+fi
+
+# setup STUBL environment
+. $STUBL_HOME/conf/stubl
+
 CLUSTERS="industry faculty ub-hpc"
 echo "You asked for the following:"
 echo
@@ -8,7 +37,7 @@ cat $@|grep SBATCH|grep ntasks-per-node
 cat $@|grep SBATCH|grep constraint
 echo
 for i in $CLUSTERS; do
-  value=`sbatch --test-only -M $i --qos=scavenger --time=00:00:10 -p scavenger $@ 2>&1` 
+  value=`$STUBL_SBATCH --test-only -M $i --qos=scavenger --time=00:00:10 -p scavenger $@ 2>&1` 
   available=`snodes all $i/scavenger idle |sed "1 d"`
   #echo "This is what is availabe = " $available
   echo "Checking the $i cluster for appropriate node type...."
@@ -19,7 +48,7 @@ for i in $CLUSTERS; do
     echo 
     echo " # OF NODES | # CORES |  MEMORY (mb)  | FEATURE"
     echo "======================================================"
-    sinfo -M $i -p scavenger --states=idle --format="    %4D    |   %2c    |    %7m    | %40f"|tail -n+3
+    $STUBL_SINFO -M $i -p scavenger --states=idle --format="    %4D    |   %2c    |    %7m    | %40f"|tail -n+3
     echo
   elif [[ "$available" == "" ]] 
   then
@@ -29,7 +58,7 @@ for i in $CLUSTERS; do
     echo "No nodes are available on $i cluster"
     echo 
   else
-    sbatch -M $i -p scavenger --qos=scavenger $@  
+    $STUBL_SBATCH -M $i -p scavenger --qos=scavenger $@  
     break
   fi
-  done
+done

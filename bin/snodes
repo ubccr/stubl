@@ -28,7 +28,6 @@ fi
 # setup STUBL environment
 . $STUBL_HOME/conf/stubl 
 
-#scontrol show node `sinfo -N -h | cut -d' ' -f1`
 if [ "$1" == "--help" ]; then
   echo "=============================================================="
   echo "Display information about one or more nodes, possibly filtered"
@@ -78,17 +77,17 @@ fi
 # so use grep filter instead....
 if [ "$cluster" != "all" ]; then
   if [ "$3" == "mix" -o "$3" == "mixed" ]; then
-    sinfo $OPTIONS -o "%13n %8t %4c %8z %15C %8O %8m %35G %18P %f" | grep -v "^CLUSTER" | head -n1
-    sinfo $OPTIONS -o "%13n %8t %4c %8z %15C %8O %8m %35G %18P %f" | grep -v "^CLUSTER" | grep 'mix'
+    $STUBL_SINFO $OPTIONS -o "%13n %8t %4c %8z %15C %8O %8m %35G %18P %f" | grep -v "^CLUSTER" | head -n1
+    $STUBL_SINFO $OPTIONS -o "%13n %8t %4c %8z %15C %8O %8m %35G %18P %f" | grep -v "^CLUSTER" | grep 'mix'
   else
-    sinfo $OPTIONS -o "%13n %8t %4c %8z %15C %8O %8m %35G %18P %f" | grep -v "^CLUSTER"
+    $STUBL_SINFO $OPTIONS -o "%13n %8t %4c %8z %15C %8O %8m %35G %18P %f" | grep -v "^CLUSTER"
   fi
 else
   if [ "$3" == "mix" -o "$3" == "mixed" ]; then
-    sinfo $OPTIONS -o "%13n %8t %4c %8z %15C %8O %8m %35G %18P %f"  | head -n1
-    sinfo $OPTIONS -o "%13n %8t %4c %8z %15C %8O %8m %35G %18P %f"  | grep 'mix'
+    $STUBL_SINFO $OPTIONS -o "%13n %8t %4c %8z %15C %8O %8m %35G %18P %f"  | head -n1
+    $STUBL_SINFO $OPTIONS -o "%13n %8t %4c %8z %15C %8O %8m %35G %18P %f"  | grep 'mix'
   else
-    sinfo $OPTIONS -o "%13n %8t %4c %8z %15C %8O %8m %35G %18P %f" 
+    $STUBL_SINFO $OPTIONS -o "%13n %8t %4c %8z %15C %8O %8m %35G %18P %f" 
   fi
 fi
 

@@ -39,7 +39,7 @@ if [ "$1" == "--help" ]; then
   echo "============================================"
 else
    YASQR=$STUBL_TMP_DIR/yasqr.$$
-   squeue $@ > $YASQR
+   $STUBL_SQUEUE $@ > $YASQR
    iStatus=`head -n1 $YASQR | awk '{ for(i=1;i<=NF;i++){if($i == "ST") { print i } } }'`
    iNodes=`head -n1 $YASQR | awk '{ for(i=1;i<=NF;i++){if($i == "NODES") { print i } } }'`
    iJob=`head -n1 $YASQR | awk '{ for(i=1;i<=NF;i++){if($i == "JOBID") { print i } } }'`

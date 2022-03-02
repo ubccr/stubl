@@ -1,8 +1,32 @@
 #!/bin/bash
-#sinfo -M industry -p scavenger --states=idle --format="I %n %Y %m %f"|tail -n+3
-#sinfo -M chemistry -p scavenger --states=idle --format="C %n %Y %m %f"|tail -n+3
-#sinfo -M mae -p scavenger --states=idle --format="M %n %Y %m %f"|tail -n+3
-#sinfo -M physics -p scavenger --states=idle --format="P %n %Y %m %f"|tail -n+3
+
+# determine STUBL install location
+# Copied from Apache Ant:
+# https://git-wip-us.apache.org/repos/asf?p=ant.git;a=blob;f=src/script/ant;h=b5ed5be6a8fe3a08d26dea53ea0fb3f5fab45e3f
+if [ -z "$STUBL_HOME" -o ! -d "$STUBL_HOME" ] ; then
+  ## resolve links - $0 may be a link to stubl's home
+  PRG="$0"
+  progname=`basename "$0"`
+
+  # need this for relative symlinks
+  while [ -h "$PRG" ] ; do
+    ls=`ls -ld "$PRG"`
+    link=`expr "$ls" : '.*-> \(.*\)$'`
+    if expr "$link" : '/.*' > /dev/null; then
+    PRG="$link"
+    else
+    PRG=`dirname "$PRG"`"/$link"
+    fi
+  done
+
+  STUBL_HOME=`dirname "$PRG"`/..
+
+  # make it fully qualified
+  STUBL_HOME=`cd "$STUBL_HOME" > /dev/null && pwd`
+fi
+
+# setup STUBL environment
+. $STUBL_HOME/conf/stubl
 
 CLUSTERS="industry faculty ub-hpc"
 for i in $CLUSTERS; do
@@ -10,7 +34,7 @@ for i in $CLUSTERS; do
   echo 
   echo " # OF NODES | # CORES |  MEMORY (mb)  | FEATURES"
   echo "======================================================"
-  sinfo -M $i -p scavenger --states=idle --format="    %4D    |   %2c    |    %7m    | %50f"|tail -n+3|sed 's/,/\&/g'
+  $STUBL_SINFO -M $i -p scavenger --states=idle --format="    %4D    |   %2c    |    %7m    | %50f"|tail -n+3|sed 's/,/\&/g'
   echo
 done
 

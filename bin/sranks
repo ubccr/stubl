@@ -64,7 +64,7 @@ echo "====  ========  ======  ========        AGE   FSHARE  JOBSIZ  PARTITION  Q
 # raw ranks don't take into account scheduler configuration, just priorities.
 # ---------------------------------------------------------------------------
 if [ "$arg1" == "--raw" ]; then
-  sprio $cArg -h -o "%u %i %Y %A %F %J %P %Q %T" | grep -v "^CLUSTER" |
+  $STUBL_SPRIO $cArg -h -o "%u %i %Y %A %F %J %P %Q %T" | grep -v "^CLUSTER" |
         sort -gr -k3 | 
         awk '{ printf("%4d  %-8s  %-6s  %8s  %6s  %6s  %6s  %9s  %3s\n", NR-1, $1,$2,$3,$4,$5,$6,$7,$8,$9); }' 
 # ---------------------------------------------------------------------------
@@ -83,11 +83,11 @@ elif [ "$arg1" == "--full" ]; then
                grep 'bf_max_job_user' | \
                cut -d'=' -f2`
 
-  userList=`sprio $cArg -h -o "%u" | grep -v "^CLUSTER" | sort -u | tr '\n' ' '`
+  userList=`$STUBL_SPRIO $cArg -h -o "%u" | grep -v "^CLUSTER" | sort -u | tr '\n' ' '`
 
   rm -f $TMPFILE
 
-  sprio $cArg -h -o "%u %i %Y %A %F %J %P %Q" | grep -v "^CLUSTER" | sort -gr -k3 > $UNRFILE
+  $STUBL_SPRIO $cArg -h -o "%u %i %Y %A %F %J %P %Q" | grep -v "^CLUSTER" | sort -gr -k3 > $UNRFILE
 
   for i in $userList; do
     grep $i $UNRFILE | head -n${JOBS_PER_USER} >> $TMPFILE
@@ -123,12 +123,12 @@ else
                grep 'bf_max_job_user' | \
                cut -d'=' -f2`
 
-  userList=`sprio $cArg -h -o "%u" | grep -v "^CLUSTER" | sort -u | tr '\n' ' '`
+  userList=`$STUBL_SPRIO $cArg -h -o "%u" | grep -v "^CLUSTER" | sort -u | tr '\n' ' '`
 
   rm -f $TMPFILE
 
   for i in $userList; do
-    sprio $cArg -h --user=$i -o "%u %i %Y %A %F %J %P %Q %T" | grep -v "^CLUSTER" | sort -gr -k3 | head -n${JOBS_PER_USER} >> $TMPFILE
+    $STUBL_SPRIO $cArg -h --user=$i -o "%u %i %Y %A %F %J %P %Q %T" | grep -v "^CLUSTER" | sort -gr -k3 | head -n${JOBS_PER_USER} >> $TMPFILE
   done
 
   if [ -f $TMPFILE ]; then

@@ -78,7 +78,7 @@ if [ "$cluster" == "" ]; then
 fi
 
 # make sure the cluster exists
-nclus=`squeue --clusters=$cluster 2>&1 | grep 'No cluster' | wc -l`
+nclus=`$STUBL_SQUEUE --clusters=$cluster 2>&1 | grep 'No cluster' | wc -l`
 if [ "$nclus" != "0" ]; then
   echo "There are no clusters named ${cluster}!"
   exit 1
@@ -130,10 +130,7 @@ fi
 
 # Submit the job and get the job id
 MyExport=SLURM_CPUS_PER_TASK,SLURM_JOB_NAME,SLURM_NTASKS_PER_NODE,SLURM_PRIO_PROCESS,SLURM_SUBMIT_DIR,SLURM_SUBMIT_HOST
-#JOB=`sbatch --export=$MyExport --job-name=FISBATCH --output=/dev/null --error=/dev/null $@ $BS 2>&1 | egrep -o -e "\b[0-9]+$"`
-#JOB=`sbatch --export=$MyExport --job-name=FISBATCH --output=/dev/null --error=/dev/null $@ $BS 2>&1 | egrep -o -e "\b[0-9]+"`
-#JOB=`sbatch --job-name=FISBATCH --output=/dev/null --error=/dev/null $@ $BS 2>&1 | egrep -o -e "\b[0-9]+"`
-JOB=`sbatch --job-name=FISBATCH --output=/dev/null --error=/dev/null $ARGS $BS 2>&1 | egrep -o -e "\b[0-9]+"`
+JOB=`$STUBL_SBATCH --job-name=FISBATCH --output=/dev/null --error=/dev/null $ARGS $BS 2>&1 | egrep -o -e "\b[0-9]+"`
 JOB=`echo $JOB | awk '{ printf("%d", $1 + 0); }'`
 
 # Make sure the job is always canceled
@@ -144,7 +141,7 @@ while true; do
     sleep 1s
 
     # Check job status
-    STATUS=`squeue --clusters=$cluster --partition=$partition -j $JOB -t PD,R -h -o %t | grep -v "^CLUSTER"`
+    STATUS=`$STUBL_SQUEUE --clusters=$cluster --partition=$partition -j $JOB -t PD,R -h -o %t | grep -v "^CLUSTER"`
 
     if [ "$STATUS" = "R" ];then
 	# Job is running, break the while loop
@@ -154,7 +151,7 @@ while true; do
     elif [ "$STATUS" != "PD" ];then
         echo "!"
 	echo "Job is not Running or Pending. Aborting"
-        scancel --clusters=$cluster --partition=$partition $JOB 2>/dev/null
+        $STUBL_SCANCEL --clusters=$cluster --partition=$partition $JOB 2>/dev/null
         echo "FISBATCH -- aborting job ($JOB)"
 	exit 1
     fi
@@ -166,7 +163,7 @@ done
 #NODE=`srun --jobid=$JOB -N1 hostname`
 HNODE=""
 usr=`whoami`
-NODE=`squeue -h --clusters=${cluster} --partition=${partition} --jobs=${JOB} -o %N | grep -v "^CLUSTER"`
+NODE=`$STUBL_SQUEUE -h --clusters=${cluster} --partition=${partition} --jobs=${JOB} -o %N | grep -v "^CLUSTER"`
 
 # unset python environment before running nodeset and then restore it, see RT#21322
 PYHOME=$PYTHONHOME

@@ -1,18 +1,5 @@
 #!/bin/bash
 
-if [ "$1" == "--help" ]; then
-  echo "================================================================================================="
-  echo ""
-  echo "  scounts - SLURM job counts. Computes the number of jobs completed by a user, group, or account."
-  echo ""
-  echo "  Usage: scounts --user=[user]|--group=[group]|--account=[account] [start_date_mmddyy]]          "
-  echo ""
-  echo "  Note: for industry accounts, start_date must be 010112 or after 073015                         "
-  echo "================================================================================================="
-
-  exit
-fi
-
 # determine STUBL install location
 # Copied from Apache Ant:
 # https://git-wip-us.apache.org/repos/asf?p=ant.git;a=blob;f=src/script/ant;h=b5ed5be6a8fe3a08d26dea53ea0fb3f5fab45e3f
@@ -38,10 +25,21 @@ if [ -z "$STUBL_HOME" -o ! -d "$STUBL_HOME" ] ; then
   STUBL_HOME=`cd "$STUBL_HOME" > /dev/null && pwd`
 fi
 
-export STUBL_HOME=$STUBL_HOME
-
 # setup STUBL environment
-. $STUBL_HOME/conf/stubl 
+. $STUBL_HOME/conf/stubl
+
+if [ "$1" == "--help" ]; then
+  echo "================================================================================================="
+  echo ""
+  echo "  scounts - SLURM job counts. Computes the number of jobs completed by a user, group, or account."
+  echo ""
+  echo "  Usage: scounts --user=[user]|--group=[group]|--account=[account] [start_date_mmddyy]]          "
+  echo ""
+  echo "  Note: for industry accounts, start_date must be 010112 or after 073015                         "
+  echo "================================================================================================="
+
+  exit
+fi
 
 # Location of helper scripts
 MYDIR=$STUBL_HOME/bin/sausage_helpers
@@ -83,8 +81,8 @@ if [ "$option" == "--group" ]; then
   rm -f tmp1
 elif [ "$option" == "--account" ]; then
   acct=`echo $1 | cut -d= -f2`
-  ssh -q vortex "sacctmgr show associations account=$acct format=Cluster,Account,User" | awk '{ print $3 }' | sed -n '4,$p' | sort -u | grep -v '^$' > tmp1
-  ssh -q presto "sacctmgr show associations account=$acct format=Cluster,Account,User" | awk '{ print $3 }' | sed -n '4,$p' | sort -u | grep -v '^$' >> tmp1
+  ssh -q vortex "$STUBL_SACCTMGR show associations account=$acct format=Cluster,Account,User" | awk '{ print $3 }' | sed -n '4,$p' | sort -u | grep -v '^$' > tmp1
+  ssh -q presto "$STUBL_SACCTMGR show associations account=$acct format=Cluster,Account,User" | awk '{ print $3 }' | sed -n '4,$p' | sort -u | grep -v '^$' >> tmp1
   userList=`sort -u tmp1 | tr '\n' ' '`
   rm -f tmp1
 

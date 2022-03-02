@@ -99,11 +99,11 @@ else
 fi
 
 if [ "$part" == "all" ]; then
-  partList=`sinfo -h -o %R`
+  partList=`$STUBL_SINFO -h -o %R`
 else
   partList=$part
 
-  if [ `sinfo -h -o %R | grep "^$part$" | wc -l` == "0" ]; then 
+  if [ `$STUBL_SINFO -h -o %R | grep "^$part$" | wc -l` == "0" ]; then 
     echo "Invalid partition argument ($part)!"
     exit
   fi
@@ -118,7 +118,7 @@ for p in $partList; do
   fi
 
   # determine upper bound on the partition's walltime
-  maxTime=`sinfo -h --partition=$p -o %l | \
+  maxTime=`$STUBL_SINFO -h --partition=$p -o %l | \
   sed 's/^[0-9]*:/0-&/g' | sed 's/-/ /g' | sed 's/:/ /g' | \
   awk '{ printf("%d\n", $4+60*$3+60*60*$2+60*60*24*$1); }'`
 
