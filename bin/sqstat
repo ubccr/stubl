@@ -55,8 +55,8 @@ DBGPART=`echo "$STUBL_DEBUG_PARTITION" | awk '{ printf("%.9s", $1); }'`
 
 tstart=`date +%s`
 
-uArg=`echo $@ | tr ' ' '\n' | grep '\-\-user'`
-cArg=`echo $@ | tr ' ' '\n' | grep '\-\-clusters'`
+uArg=`echo $@ | tr ' ' '\n' | grep '^\-\-user'`
+cArg=`echo $@ | tr ' ' '\n' | grep '^\-\-clusters'`
 
 # templates for html pages
 tpl=$STUBL_HOME/template/sqstat_html.tpl
@@ -87,16 +87,16 @@ sinfo $cArg -h -o "%F" |
   awk -F "/" '{ sum1+=$1;sum2+=$2;sum3+=$3;sum4+=$4;} END {print sum1,sum2,sum3,sum4}' | \
   sed 's: :/:g' > $ndetmp
 
-sinfo $cArg | grep ' mix ' | awk '{ print $6 }' | nodeset -c > $mixtmp
+sinfo $cArg | egrep '^[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+mix[[:space:]]' | awk '{ print $6 }' | nodeset -c > $mixtmp
 sinfo $cArg -h -o "%N %P %C %A" | \
    grep -v "^CLUSTER" | \
    grep -v "^$" | \
    egrep -v "$STUBL_SQSTAT_EXCLUDES" > $sintmp
-squeue $uArg $cArg -h -S i -o "%10i %10u %9P %12j %.5D %.5C %.6m %.13l %.2t %.13M  %15N" | grep -v "^CLUSTER" | grep -v "^$" | sed 's/ PD /  Q /g' > $tmp
+squeue $uArg $cArg -h -S i -o "%10i %10u %9P %12j %.5D %.5C %.6m %.13l %.2t %.13M  %15N" | grep -v "^CLUSTER" | grep -v "^$" | sed -E 's/(^[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+)PD[[:space:]]/\1 Q /' > $tmp
 
 # job information for summary output
-activeJobs=`cat $tmp | grep ' R ' | wc -l`
-queuedJobs=`cat $tmp | grep ' Q ' | wc -l`
+activeJobs=`cat $tmp | egrep '^[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+R[[:space:]]' | wc -l`
+queuedJobs=`cat $tmp | egrep '^[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+Q[[:space:]]' | wc -l`
 totalJobs=`cat $tmp | wc -l`
 otherJobs=`expr $totalJobs - $activeJobs - $queuedJobs`
 
@@ -159,9 +159,9 @@ fi
 gtot=0
 grun=0
 gque=0
-for partition in `cat $tmp | awk '{ print $3 }' | sort -u`; do
-  running=`cat $tmp | awk '{ print $3,$9 }' | grep $partition | grep ' R$' | wc -l`
-  queued=`cat $tmp | awk '{ print $3,$9 }' | grep $partition | grep ' Q$' | wc -l`
+for partition in `cat $tmp | awk '{ print $3 }' | sed 's/\*$//' | sort -u`; do
+  running=`cat $tmp | awk '{ print $3,$9 }' | egrep "^${partition}[\\\*]?[[:space:]]" | egrep '[[:space:]]R$' | wc -l`
+  queued=`cat $tmp | awk '{ print $3,$9 }' | egrep "^${partition}[\\\*]?[[:space:]]" | egrep '[[:space:]]Q$' | wc -l`
   total=`expr $running + $queued`  
   if [ "$1" == "--html" ]; then
     # create table entry
@@ -217,11 +217,11 @@ gtot=0
 grun=0
 gidl=0
 goth=0
-for partition in `cat $sintmp | awk '{ print $2 }' | sort -u`; do
-  total=`cat $sintmp | awk '{print $2,$3}' | grep $partition | cut -d'/' -f4`
-  running=`cat $sintmp | awk '{print $2,$3}' | grep $partition | cut -d'/' -f1 | awk '{ print $2 }'`
-  idle=`cat $sintmp | awk '{print $2,$3}' | grep $partition | cut -d'/' -f2`
-  other=`cat $sintmp | awk '{print $2,$3}' | grep $partition | cut -d'/' -f3`
+for partition in `cat $sintmp | awk '{ print $2 }' | sed 's/\*$//' | sort -u`; do
+  total=`cat $sintmp | awk '{print $2,$3}' | egrep "^${partition}[\\\*]?[[:space:]]" | cut -d'/' -f4`
+  running=`cat $sintmp | awk '{print $2,$3}' | egrep "^${partition}[\\\*]?[[:space:]]" | cut -d'/' -f1 | awk '{ print $2 }'`
+  idle=`cat $sintmp | awk '{print $2,$3}' | egrep "^${partition}[\\\*]?[[:space:]]" | cut -d'/' -f2`
+  other=`cat $sintmp | awk '{print $2,$3}' | egrep "^${partition}[\\\*]?[[:space:]]" | cut -d'/' -f3`
   if [ "$1" == "--html" ]; then
     # create table entry
     cat $ctpl | sed "s/_PART_/$partition/g" \
@@ -277,9 +277,9 @@ fi
 
 gtot=0
 grun=0
-for partition in `cat $sintmp | awk '{ print $2 }' | sort -u`; do
-  running=`cat $sintmp | awk '{print $2,$4}' | grep $partition | cut -d'/' -f1 | awk '{ print $2 }'`
-  idle=`cat $sintmp | awk '{print $2,$4}' | grep $partition | cut -d'/' -f2`
+for partition in `cat $sintmp | awk '{ print $2 }' | sed 's/\*$//' | sort -u`; do
+  running=`cat $sintmp | awk '{print $2,$4}' | egrep "^${partition}[\\\*]?[[:space:]]" | cut -d'/' -f1 | awk '{ print $2 }'`
+  idle=`cat $sintmp | awk '{print $2,$4}' | egrep "^${partition}[\\\*]?[[:space:]]" | cut -d'/' -f2`
   total=`expr $running + $idle`
   if [ "$1" == "--html" ]; then
     # create table entry
@@ -322,7 +322,7 @@ elif [ "$uArg" == "" ]; then
 fi
 
 # generate sorted list of users and initialize related counters
-cat $tmp | grep ' [RQ] ' | sort -su -k2,2 | awk '{ print $2 }' | sort -u > $utmp
+cat $tmp | egrep '^[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[RQ][[:space:]]' | sort -su -k2,2 | awk '{ print $2 }' | sort -u > $utmp
 nusers=`cat $utmp | wc -l`
 a=0
 b=0
@@ -349,15 +349,15 @@ echo "                      running   queued   running  queued  running  running
 echo "username  total jobs   jobs      jobs     cores    cores   nodes   on dflt   on dbg  on other "
 echo "--------  ----------  -------   -------  -------  ------  -------  -------  -------  -------"
 for i in `cat $utmp`; do
-  jcount=`awk '{ print $2 }' $tmp | grep "$i" | wc -l`
-  jnumR=`awk '{ print $2,$9 }' $tmp | grep "^$i " | grep ' R$' | wc -l`
-  jnumQ=`awk '{ print $2,$9 }' $tmp | grep "^$i " | grep ' Q$' | wc -l`
+  jcount=`awk '{ print $2 }' $tmp | grep "^${i}$" | wc -l`
+  jnumR=`awk '{ print $2,$9 }' $tmp | egrep "^${i}[[:space:]]" | egrep '[[:space:]]R$' | wc -l`
+  jnumQ=`awk '{ print $2,$9 }' $tmp | egrep "^${i}[[:space:]]" | egrep '[[:space:]]Q$' | wc -l`
   pnumR=0
   pnumQ=0
-  if [ "$jnumR" -gt "0" ]; then pnumR=`awk '{ print $2,$6,$9 }' $tmp | grep "^$i " | grep ' R$' | awk '{ SUM += $2} END { print SUM }'`; fi 
-  if [ "$jnumQ" -gt "0" ]; then pnumQ=`awk '{ print $2,$6,$9 }' $tmp | grep "^$i " | grep ' Q$' | awk '{ SUM += $2} END { print SUM }'`; fi 
+  if [ "$jnumR" -gt "0" ]; then pnumR=`awk '{ print $2,$6,$9 }' $tmp | egrep "^${i}[[:space:]]" | egrep '[[:space:]]R$' | awk '{ SUM += $2} END { print SUM }'`; fi
+  if [ "$jnumQ" -gt "0" ]; then pnumQ=`awk '{ print $2,$6,$9 }' $tmp | egrep "^${i}[[:space:]]" | egrep '[[:space:]]Q$' | awk '{ SUM += $2} END { print SUM }'`; fi
   nnumR=0
-  if [ "$jnumR" -gt "0" ]; then nnumR=`awk '{ print $2,$5,$9 }' $tmp | grep "^$i " | grep ' R$' | awk '{ SUM += $2} END { print SUM }'`; fi 
+  if [ "$jnumR" -gt "0" ]; then nnumR=`awk '{ print $2,$5,$9 }' $tmp | egrep "^${i}[[:space:]]" | egrep '[[:space:]]R$' | awk '{ SUM += $2} END { print SUM }'`; fi
 
   # count number of nodes allocated to user in default partition
   ugnr=`awk -v usr="$i" -v defpart="$DEFPART" '{ if(($2==usr) && ($3==defpart) &&( $9=="R")) SUM += $5 } END { print SUM }' $tmp`
