@@ -1,5 +1,33 @@
 #!/bin/bash
 
+# determine STUBL install location
+# Copied from Apache Ant:
+# https://git-wip-us.apache.org/repos/asf?p=ant.git;a=blob;f=src/script/ant;h=b5ed5be6a8fe3a08d26dea53ea0fb3f5fab45e3f
+if [ -z "$STUBL_HOME" -o ! -d "$STUBL_HOME" ] ; then
+  ## resolve links - $0 may be a link to stubl's home
+  PRG="$0"
+  progname=`basename "$0"`
+
+  # need this for relative symlinks
+  while [ -h "$PRG" ] ; do
+    ls=`ls -ld "$PRG"`
+    link=`expr "$ls" : '.*-> \(.*\)$'`
+    if expr "$link" : '/.*' > /dev/null; then
+    PRG="$link"
+    else
+    PRG=`dirname "$PRG"`"/$link"
+    fi
+  done
+
+  STUBL_HOME=`dirname "$PRG"`/..
+
+  # make it fully qualified
+  STUBL_HOME=`cd "$STUBL_HOME" > /dev/null && pwd`
+fi
+
+# setup STUBL environment
+. $STUBL_HOME/conf/stubl
+
 if [ "$1" == "" -o "$1" == "--help" ]; then
   echo "========================================"
   echo "sjeff (Check SLURM Job Efficiency)      "
@@ -36,7 +64,7 @@ if [ "$1" == "" -o "$1" == "--help" ]; then
 fi
 
 if [ "$1" == "--all" ]; then
-  jobList=`squeue -h $@ --state='R' -o %A | grep -v CLUSTER`
+  jobList=`$STUBL_SQUEUE -h $@ --state='R' -o %A | grep -v CLUSTER`
 else
   jobList=`echo $1 | tr ',' ' '`
 fi
@@ -48,9 +76,9 @@ shift
 echo "Job_ID    Username  Mem_Request  Max_Mem_Use  CPU_Efficiency  Number_of_CPUs_In_Use"
 
 for job in $jobList; do
-  jobInfo=`squeue -h $@ --job=$job --state='R' 2>/dev/null | grep -v CLUSTER`
+  jobInfo=`$STUBL_SQUEUE -h $@ --job=$job --state='R' 2>/dev/null | grep -v CLUSTER`
   # guard against multiple results, as can happen with job arrays
-  njobs=`squeue -h $@ --job=$job --state='R' 2>/dev/null | grep -v CLUSTER | wc -l`
+  njobs=`$STUBL_SQUEUE -h $@ --job=$job --state='R' 2>/dev/null | grep -v CLUSTER | wc -l`
  
   if [ "$jobInfo" == "" -a "$1" != "--all" ]; then
     echo "Invalid job ID ($job)"
@@ -58,24 +86,24 @@ for job in $jobList; do
     :
   else
     #user=`echo $jobInfo | awk '{ print $4 }'`
-    user=`squeue -h $@ --job=$job --state='R' 2>/dev/null -o %u | grep -v CLUSTER`
+    user=`$STUBL_SQUEUE -h $@ --job=$job --state='R' 2>/dev/null -o %u | grep -v CLUSTER`
     #uid=`id -u $user`
-    uid=`squeue -h $@ --job=$job --state='R' 2>/dev/null -o %U | grep -v CLUSTER`
+    uid=`$STUBL_SQUEUE -h $@ --job=$job --state='R' 2>/dev/null -o %U | grep -v CLUSTER`
     nodelist=`echo $jobInfo | awk '{ print $8 }'`
     nodelist=`nodeset -e $nodelist | tr ' ' ','`
 
     # how many cpus were requested for the job
-    ncpus=`squeue -h $@ --job=$job -o %C | grep -v CLUSTER`
+    ncpus=`$STUBL_SQUEUE -h $@ --job=$job -o %C | grep -v CLUSTER`
 
     # total number of cpus actually reserved for the user on the nodes
     # this includes stacked jobs
-    tcpus=`squeue -h -u $user $@ --nodes=$nodelist -o %C | grep -v CLUSTER | awk '{ sum+=$1} END {print sum}'`
+    tcpus=`$STUBL_SQUEUE -h -u $user $@ --nodes=$nodelist -o %C | grep -v CLUSTER | awk '{ sum+=$1} END {print sum}'`
 
     # adjust cpu usage by a multiplier to account for stacked jobs
     cfact=`echo "$ncpus / $tcpus" | bc -l`
 
     # how much memory requested for the job
-    mreq=`sacct -X $@ -j $job -n -o"ReqMem"`
+    mreq=`$STUBL_SACCT -X $@ -j $job -n -o"ReqMem"`
 
     # accumulate efficiency of each requested cpu
     # echo "clush -w $nodelist \"ps -u $user -o pcpu= \""
@@ -110,7 +138,7 @@ for job in $jobList; do
 
     # mem usage per node
     if [ "memsum" != "" ]; then
-      nnodes=`sacct -X $@ -j $job -n -o"NNODES"` 
+      nnodes=`$STUBL_SACCT -X $@ -j $job -n -o"NNODES"` 
       memsum=`echo "$memsum / $nnodes" | bc -l | awk '{ printf("%0.2lfGn", $1/1E9); }'`
     fi
 

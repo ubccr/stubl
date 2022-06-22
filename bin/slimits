@@ -1,5 +1,33 @@
 #!/bin/bash
 
+# determine STUBL install location
+# Copied from Apache Ant:
+# https://git-wip-us.apache.org/repos/asf?p=ant.git;a=blob;f=src/script/ant;h=b5ed5be6a8fe3a08d26dea53ea0fb3f5fab45e3f
+if [ -z "$STUBL_HOME" -o ! -d "$STUBL_HOME" ] ; then
+  ## resolve links - $0 may be a link to stubl's home
+  PRG="$0"
+  progname=`basename "$0"`
+
+  # need this for relative symlinks
+  while [ -h "$PRG" ] ; do
+    ls=`ls -ld "$PRG"`
+    link=`expr "$ls" : '.*-> \(.*\)$'`
+    if expr "$link" : '/.*' > /dev/null; then
+    PRG="$link"
+    else
+    PRG=`dirname "$PRG"`"/$link"
+    fi
+  done
+
+  STUBL_HOME=`dirname "$PRG"`/..
+
+  # make it fully qualified
+  STUBL_HOME=`cd "$STUBL_HOME" > /dev/null && pwd`
+fi
+
+# setup STUBL environment
+. $STUBL_HOME/conf/stubl
+
 if [ "$1" == "--help" ]; then
   echo "======================================================="
   echo ""
@@ -22,17 +50,17 @@ else
 fi
 
 # get list of all clusters
-# CLUSTERS=`sinfo -M all | grep CLUSTER: | awk '{ print $2 }' | tr '\n' ' '`
+# CLUSTERS=`$STUBL_SINFO -M all | grep CLUSTER: | awk '{ print $2 }' | tr '\n' ' '`
 
 # get parsable sacctmgr info
 echo -n "."
 SACCTFILE=/tmp/slimits.sacct.$$
-sacctmgr show associations user=$TheUser -n -p > $SACCTFILE
+$STUBL_SACCTMGR show associations user=$TheUser -n -p > $SACCTFILE
 
 # get parsable cluster partition info
 echo -n "."
 SINFOFILE=/tmp/slimits.sinfo.$$
-sinfo -M all --format=%R | tr '\n' ' ' | tr ':' '\n' | sed 's/ PARTITION /,PARTITION,/g' | sed 's/CLUSTER//g' | grep -v "^$" | sed 's/^[ ]*//g' | sed 's/[ ]*$//g'> $SINFOFILE
+$STUBL_SINFO -M all --format=%R | tr '\n' ' ' | tr ':' '\n' | sed 's/ PARTITION /,PARTITION,/g' | sed 's/CLUSTER//g' | grep -v "^$" | sed 's/^[ ]*//g' | sed 's/[ ]*$//g'> $SINFOFILE
 
 # get list of users accounts, store as an array
 echo -n "."
@@ -115,9 +143,9 @@ cat /tmp/slimits.bdy.$$ >> /tmp/slimits.qos.$$
 # assemble non-QOS portion
 echo -n "."
 if [ "`echo $@ | tr ' ' '\n' | grep 'format=' | wc -l`" == "0" ];then
-  sacctmgr show associations user=$TheUser $@ format=Cluster,Account%20,User,DefaultQOS%$nDefQOS > /tmp/slimits.$$
+  $STUBL_SACCTMGR show associations user=$TheUser $@ format=Cluster,Account%20,User,DefaultQOS%$nDefQOS > /tmp/slimits.$$
 else
-  sacctmgr show associations user=$TheUser $@ > /tmp/slimits.$$
+  $STUBL_SACCTMGR show associations user=$TheUser $@ > /tmp/slimits.$$
 fi
 
 # combine results

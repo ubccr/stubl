@@ -1,5 +1,33 @@
 #!/bin/bash
 
+# determine STUBL install location
+# Copied from Apache Ant:
+# https://git-wip-us.apache.org/repos/asf?p=ant.git;a=blob;f=src/script/ant;h=b5ed5be6a8fe3a08d26dea53ea0fb3f5fab45e3f
+if [ -z "$STUBL_HOME" -o ! -d "$STUBL_HOME" ] ; then
+  ## resolve links - $0 may be a link to stubl's home
+  PRG="$0"
+  progname=`basename "$0"`
+
+  # need this for relative symlinks
+  while [ -h "$PRG" ] ; do
+    ls=`ls -ld "$PRG"`
+    link=`expr "$ls" : '.*-> \(.*\)$'`
+    if expr "$link" : '/.*' > /dev/null; then
+    PRG="$link"
+    else
+    PRG=`dirname "$PRG"`"/$link"
+    fi
+  done
+
+  STUBL_HOME=`dirname "$PRG"`/..
+
+  # make it fully qualified
+  STUBL_HOME=`cd "$STUBL_HOME" > /dev/null && pwd`
+fi
+
+# setup STUBL environment
+. $STUBL_HOME/conf/stubl
+
 if [ "$1" == "--help" ]; then
   echo "======================================================="
   echo ""
@@ -24,14 +52,14 @@ shift
 # basic accounting information
 echo "JobID        User      Partition       NNodes NCPUS  Start               Elapsed      State      Priority   "
 echo "------------ --------- --------------- ------ ------ ------------------- ------------ ---------- -----------"
-sacct $@ -j $jid --format=jobid%-12,user%-9,partition%-15,nnodes%-6,ncpus%-6,start%-19,elapsed%-12,state%-10,priority%-11 -X -n
+$STUBL_SACCT $@ -j $jid --format=jobid%-12,user%-9,partition%-15,nnodes%-6,ncpus%-6,start%-19,elapsed%-12,state%-10,priority%-11 -X -n
 
-part=`sacct $@ -j $jid --format=partition%-20 -X -n | awk '{ print $1 }'`
-clust=`sacct $@ -j $jid --format=cluster%-20 -X -n | awk '{ print $1 }'`
+part=`$STUBL_SACCT $@ -j $jid --format=partition%-20 -X -n | awk '{ print $1 }'`
+clust=`$STUBL_SACCT $@ -j $jid --format=cluster%-20 -X -n | awk '{ print $1 }'`
 
 #nodelist
 echo " "
-nodelist=`sacct $@ -j $jid --format=nodelist -P -X -n | nodeset -e | grep -v "None assigned" | tr ' ' '\n' `
+nodelist=`$STUBL_SACCT $@ -j $jid --format=nodelist -P -X -n | nodeset -e | grep -v "None assigned" | tr ' ' '\n' `
 j=0
 for i in $nodelist; do
   if [ "$j" == "0" ]; then
