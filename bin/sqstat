@@ -92,7 +92,7 @@ sinfo $cArg -h -o "%N %P %C %A" | \
    grep -v "^CLUSTER" | \
    grep -v "^$" | \
    egrep -v "$STUBL_SQSTAT_EXCLUDES" > $sintmp
-squeue $uArg $cArg -h -S i -o "%10i %10u %9P %12j %.5D %.5C %.6m %.13l %.2t %.13M  %15N" | grep -v "^CLUSTER" | grep -v "^$" | sed -E 's/(^[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+)PD[[:space:]]/\1 Q /' > $tmp
+squeue $uArg $cArg -h -S i -o "%10i %10u %16P %12j %.5D %.5C %.6m %.13l %.2t %.13M  %N" | grep -v "^CLUSTER" | grep -v "^$" | sed -E 's/(^[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+)PD[[:space:]]/\1 Q /' > $tmp
 
 # job information for summary output
 activeJobs=`cat $tmp | egrep '^[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+R[[:space:]]' | wc -l`
@@ -115,7 +115,7 @@ pctUse=`echo "100 * $coresUtilized / $coresTotal" | bc -l`
 
 # display final results, but not if only a summary is requested
 if [ "$1" != "--html" -a "$1" != "--summary" ]; then
-  echo "JOBID      USER       PARTITION NAME         NODES  CPUS MEMORY      REQ_TIME ST      RUN_TIME  NODELIST"
+  echo "JOBID      USER       PARTITION        NAME         NODES  CPUS MEMORY    REQ_TIME    ST     RUN_TIME  NODELIST"
   cat $tmp
 fi
 
