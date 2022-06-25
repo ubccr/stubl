@@ -33,8 +33,7 @@ fi
 #$STUBL_SINFO -M mae -p scavenger --states=idle --format="M %n %Y %m %f"|tail -n+3
 #$STUBL_SINFO -M physics -p scavenger --states=idle --format="P %n %Y %m %f"|tail -n+3
 
-CLUSTERS="industry faculty ub-hpc"
-for i in $CLUSTERS; do
+for i in $STUBL_CLUSTERS; do
   echo "Available nodes on the $i cluster:"
   echo 
   echo " # OF NODES | # CORES |  MEMORY (mb)  | FEATURES"

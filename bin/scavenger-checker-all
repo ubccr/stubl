@@ -28,8 +28,7 @@ fi
 # setup STUBL environment
 . $STUBL_HOME/conf/stubl
 
-CLUSTERS="industry faculty ub-hpc"
-for i in $CLUSTERS; do
+for i in $STUBL_CLUSTERS; do
   echo "All nodes on the $i cluster:"
   echo 
   echo " # OF NODES | # CORES |  MEMORY (mb)  | FEATURE"

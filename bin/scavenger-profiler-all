@@ -34,9 +34,10 @@ echo
 echo " # OF NODES | # CORES |  MEMORY (mb)  | FEATURE"
 echo "======================================================"
 echo
-$STUBL_SINFO  -M faculty -p scavenger --format="    %4D    |   %2c    |    %7m    | %70f"|tail -n+3 | sed 's/,/\&/g'
-$STUBL_SINFO  -M industry -p scavenger --format="    %4D    |   %2c    |    %7m    | %70f"|tail -n+3 | sed 's/,/\&/g'
-$STUBL_SINFO  -M ub-hpc -p scavenger --format="    %4D    |   %2c    |    %7m    | %70f"|tail -n+3 | sed 's/,/\&/g'
+for i in $STUBL_CLUSTERS
+do
+  $STUBL_SINFO  -M $i -p scavenger --format="    %4D    |   %2c    |    %7m    | %70f"|tail -n+3 | sed 's/,/\&/g'
+done
 echo
 echo "To used a specific set or subset of nodes, use the following in the submitted slurm script:"
 echo

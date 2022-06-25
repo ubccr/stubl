@@ -28,7 +28,6 @@ fi
 # setup STUBL environment
 . $STUBL_HOME/conf/stubl
 
-CLUSTERS="industry faculty ub-hpc"
 echo "You asked for the following:"
 echo
 cat $@|grep SBATCH|grep nodes
@@ -36,7 +35,7 @@ cat $@|grep SBATCH|grep mem
 cat $@|grep SBATCH|grep ntasks-per-node
 cat $@|grep SBATCH|grep constraint
 echo
-for i in $CLUSTERS; do
+for i in $STUBL_CLUSTERS; do
   value=`$STUBL_SBATCH --test-only -M $i --qos=scavenger --time=00:00:10 -p scavenger $@ 2>&1` 
   available=`snodes all $i/scavenger idle |sed "1 d"`
   #echo "This is what is availabe = " $available

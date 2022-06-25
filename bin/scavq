@@ -42,8 +42,7 @@ else
 fi
 fi
 
-CLUSTERS="industry faculty ub-hpc"
-for i in $CLUSTERS; do
+for i in $STUBL_CLUSTERS; do
   echo "Jobs for $WHOAMI:"
   $STUBL_SQUEUE  -M $i -p scavenger $ARGS -o  "%.18i %.10P %.15j %.8u %.2t %.10M %.6D %R"
   echo
