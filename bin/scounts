@@ -7,7 +7,6 @@ if [ "$1" == "--help" ]; then
   echo ""
   echo "  Usage: scounts --user=[user]|--group=[group]|--account=[account] [start_date_mmddyy]]          "
   echo ""
-  echo "  Note: for industry accounts, start_date must be 010112 or after 073015                         "
   echo "================================================================================================="
 
   exit
@@ -64,29 +63,24 @@ else
   start=$2
 fi
 
-# only aggretate values are available prior to 07/30/2015
-# so don't allow intermediate start dates
-bIndustry=`echo "$1" | cut -d= -f2 | grep '^pi-' | wc -l`
-if [ "$bIndustry" == "1" ]; then
-  if [ "$start" -gt "010112" -a "$start" -lt "073015" ]; then
-    echo "Start date must be either 010112 or later than 073015"
-    exit
-  fi
+if [ "${USEREXCLUDE}" = "" ]
+then
+  USEREXCLUDE="XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 fi
+
+tempfile="$(mktemp)"
 
 if [ "$option" == "--group" ]; then
   acct=""
   grp=`echo $1 | cut -d= -f2`
-  ssh -q vortex "export STUBL_HOME=$STUBL_HOME; $LISTGROUP $grp" | grep -v $USEREXCLUDE | awk '{ print $2 }' > tmp1
-  ssh -q presto "export STUBL_HOME=$STUBL_HOME; $LISTGROUP $grp" | grep -v $USEREXCLUDE | awk '{ print $2 }' >> tmp1
-  userList=`sort -u tmp1 | tr '\n' ' '`
-  rm -f tmp1
+  $LISTGROUP "$grp" | grep -v $USEREXCLUDE | awk '{ print $2 }' > ${tempfile}
+  userList=`sort -u ${tempfile} | tr '\n' ' '`
+  rm -f ${tempfile}
 elif [ "$option" == "--account" ]; then
   acct=`echo $1 | cut -d= -f2`
-  ssh -q vortex "$STUBL_SACCTMGR show associations account=$acct format=Cluster,Account,User" | awk '{ print $3 }' | sed -n '4,$p' | sort -u | grep -v '^$' > tmp1
-  ssh -q presto "$STUBL_SACCTMGR show associations account=$acct format=Cluster,Account,User" | awk '{ print $3 }' | sed -n '4,$p' | sort -u | grep -v '^$' >> tmp1
-  userList=`sort -u tmp1 | tr '\n' ' '`
-  rm -f tmp1
+  $STUBL_SACCTMGR show associations account="$acct" format=Cluster,Account,User | awk '{ print $3 }' | sed -n '4,$p' | sort -u | grep -v '^$' > ${tempfile}
+  userList=`sort -u ${tempfile} | tr '\n' ' '`
+  rm -f ${tempfile}
 
   prenumEntry=`grep "$acct" $PRESUM_FILE`
 
@@ -102,34 +96,17 @@ elif [ "$option" == "--user" ]; then
 else
   acct=""
   grp=$1
-  ssh -q vortex "export STUBL_HOME=$STUBL_HOME; $LISTGROUP $grp" | grep -v $USEREXCLUDE | awk '{ print $2 }' > tmp1
-  ssh -q presto "export STUBL_HOME=$STUBL_HOME; $LISTGROUP $grp" | grep -v $USEREXCLUDE | awk '{ print $2 }' >> tmp1
-  userList=`sort -u tmp1 | tr '\n' ' '`
-  rm -f tmp1
+  $LISTGROUP "$grp" | grep -v $USEREXCLUDE | awk '{ print $2 }' > ${tempfile}
+  userList=`sort -u ${tempfile} | tr '\n' ' '`
+  rm -f ${tempfile}
 fi
 echo "users = $userList"
 
 grandSum=0
 sum=0
 for u in $userList; do
-  nj=`ssh -q vortex "module load stubl; slogs $start $u -X $acct" | awk '{ print $1 }' | grep '^[0-9]' | wc -l`
+  nj=`$STUBL_HOME/bin/slogs $start $u -X "$acct" | awk '{ print $1 }' | grep '^[0-9]' | wc -l`
   sum=`expr $sum + $nj`
 done
 echo "Jobs run on vortex since $start : $sum"
-grandSum=$sum
-
-sum=0
-for u in $userList; do
-  nj=`ssh -q presto "module load stubl; slogs $start $u --clusters=industry -X $acct" | awk '{ print $1 }' | grep '^[0-9]' | wc -l`
-  sum=`expr $sum + $nj`
-done
-
-if [ "$start" -le "010112" ]; then
-   sum=`echo "$sum $prenum" | awk '{ printf("%d\n", $1+$2); }'`
-fi
-
-echo "Jobs run on presto since $start : $sum"
-
-grandSum=`expr $sum + $grandSum`
-echo "Grand Total : $grandSum"
 

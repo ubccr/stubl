@@ -27,6 +27,7 @@
 #   STUBL_JOBSCRIPT_ROOT_DIR = path to root dir where
 #   SLURM job scripts are saved
 # =====================================================
+export STUBL_CLUSTERS="tux tux2"
 export STUBL_DEFAULT_CLUSTER=tux
 export STUBL_DEFAULT_PARTITION=compute
 export STUBL_DEBUG_PARTITION=debug

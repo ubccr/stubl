@@ -34,11 +34,12 @@ echo
 echo " # OF NODES | # CORES |  MEMORY (mb)  | FEATURE"
 echo "======================================================"
 echo
-$STUBL_SINFO -M industry -p scavenger --states=idle --format="    %4D    |   %2c    |    %7m    | %45f"|tail -n+3  |sed 's/,/\&/g'
-$STUBL_SINFO -M faculty -p scavenger --states=idle --format="    %4D    |   %2c    |    %7m    | %45f"|tail -n+3 |sed 's/,/\&/g'
-$STUBL_SINFO -M ub-hpc -p scavenger --states=idle --format="    %4D    |   %2c    |    %7m    | %45f"|tail -n+3 |sed 's/,/\&/g'
+for i in $STUBL_CLUSTERS
+do
+  $STUBL_SINFO -M $i -p scavenger --states=idle --format="    %4D    |   %2c    |    %7m    | %45f"|tail -n+3 |sed 's/,/\&/g'
+done
 echo
-echo "To used a specific set or subset of nodes, use the following FEATUREin the submitted slurm script:"
+echo "To used a specific set or subset of nodes, use the following FEATURE in the submitted slurm script:"
 echo
 echo "	--constraint=CPU-E5-2650v3"
 echo "	or "

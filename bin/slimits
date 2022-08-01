@@ -97,8 +97,6 @@ for ((c=0; c < ${#CLUSTERS[@]}; c++ )); do
   # add on supporters and any other non-partition qos entries
   if [ "$cluster" == "ub-hpc" ]; then
     PARTITIONS="$PARTITIONS _supporters_ _gpu2_ _nih_ _nihsupport_ _mri_ _mrisupport_"
-  elif [ "$cluster" == "industry" ]; then
-    PARTITIONS="$PARTITIONS _sentient_"
   elif [ "$cluster" == "mae" ]; then
     PARTITIONS="$PARTITIONS _thermo_"
   fi

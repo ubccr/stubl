@@ -1,4 +1,3 @@
-#!/bin/bash
 
 if [ "$1" == "--help" ]; then
   echo "======================================================================================="
@@ -8,7 +7,6 @@ if [ "$1" == "--help" ]; then
   echo ""
   echo "  Usage: sausage --group=[group]|--account=[account]|--user=[user] [start_date_mmddyy]]"
   echo ""
-  echo "  Note: for industry accounts, start_date must be 010112 or after 073015               "
   echo "======================================================================================="
 
   exit
@@ -66,31 +64,27 @@ else
   start=$2
 fi
 
-# only aggretate values are available prior to 07/30/2015
-# so don't allow intermediate start dates
-bIndustry=`echo "$1" | cut -d= -f2 | grep '^pi-' | wc -l`
-if [ "$bIndustry" == "1" ]; then
-  if [ "$start" -gt "010112" -a "$start" -lt "073015" ]; then
-    echo "Start date must be either 010112 or later than 073015"
-    exit
-  fi
+option=`echo $1 | cut -d= -f1`
+
+
+if [ "${USEREXCLUDE}" = "" ]
+then
+  USEREXCLUDE="XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 fi
 
-option=`echo $1 | cut -d= -f1`
+tempfile="$(mktemp)"
 
 if [ "$option" == "--group" ]; then
   acct=""
   grp=`echo $1 | cut -d= -f2`
-  ssh -q vortex "export STUBL_HOME=$STUBL_HOME; $LISTGROUP $grp" | grep -v $USEREXCLUDE | awk '{ print $2 }' > tmp1
-  ssh -q presto "export STUBL_HOME=$STUBL_HOME; $LISTGROUP $grp" | grep -v $USEREXCLUDE | awk '{ print $2 }' >> tmp1
-  userList=`sort -u tmp1 | tr '\n' ' '`
-  rm -f tmp1
+  $LISTGROUP "$grp" | grep -v $USEREXCLUDE | awk '{ print $2 }' > ${tempfile}
+  userList=`sort -u ${tempfile} | tr '\n' ' '`
+  rm -f ${tempfile}
 elif [ "$option" == "--account" ]; then
   acct=`echo $1 | cut -d= -f2`
-  ssh -q vortex "$STUBL_SACCTMGR show associations account=$acct format=Cluster,Account,User" | awk '{ print $3 }' | sed -n '4,$p' | sort -u | grep -v '^$' > tmp1
-  ssh -q presto "$STUBL_SACCTMGR show associations account=$acct format=Cluster,Account,User" | awk '{ print $3 }' | sed -n '4,$p' | sort -u | grep -v '^$' >> tmp1
-  userList=`sort -u tmp1 | tr '\n' ' '`
-  rm -f tmp1
+  $STUBL_SACCTMGR show associations account="$acct" format=Cluster,Account,User | awk '{ print $3 }' | sed -n '4,$p' | sort -u | grep -v '^$' > ${tempfile}
+  userList=`sort -u ${tempfile} | tr '\n' ' '`
+  rm -f ${tempfile}
 
   presumEntry=`grep "$acct" $PRESUM_FILE`
   if [ "$presumEntry" != "" ]; then
@@ -105,10 +99,9 @@ elif [ "$option" == "--user" ]; then
 else
   acct=""
   grp=$1
-  ssh -q vortex "export STUBL_HOME=$STUBL_HOME; $LISTGROUP $grp" | grep -v $USEREXCLUDE | awk '{ print $2 }' > tmp1
-  ssh -q presto "export STUBL_HOME=$STUBL_HOME; $LISTGROUP $grp" | grep -v $USEREXCLUDE | awk '{ print $2 }' >> tmp1
-  userList=`sort -u tmp1 | tr '\n' ' '`
-  rm -f tmp1
+  $LISTGROUP "$grp" | grep -v $USEREXCLUDE | awk '{ print $2 }' > ${tempfile}
+  userList=`sort -u ${tempfile} | tr '\n' ' '`
+  rm -f ${tempfile}
 fi
 echo "users = $userList"
 echo "start date = $start"
@@ -117,32 +110,11 @@ grandSum=0
 sum=0
 for u in $userList; do
   # for HH:MM:SS job times
-  nhrs=`ssh -q vortex "module load stubl; slogs $start $u -X $acct" | awk '{ print $6,":",$3; }' | grep '^[0-9]' | grep -v '-' | awk -F: '{ printf("%lf\n", $4*($1+($2/60)+($3/3600))); }' | awk '{ sum+=$1} END {print sum}'`
+  hrs=`$STUBL_HOME/bin/slogs $start $u -X "$acct" | awk '{ print $6,":",$3; }' | grep '^[0-9]' | grep -v '-' | awk -F: '{ printf("%lf\n", $4*($1+($2/60)+($3/3600))); }' | awk '{ sum+=$1} END {print sum}'`
   sum=`echo "$sum $nhrs" | awk '{ printf("%lf\n", $1+$2); }'`
 
   # for DD-HH:MM:SS job times
-  nhrs=`ssh -q vortex "module load stubl; slogs $start $u -X $acct" | awk '{ print $6,":",$3; }' | grep '^[0-9]' | grep '-' | sed 's/-/:/g' | awk -F: '{ printf("%lf\n", $5*(($1*24)+$2+($3/60)+($4/3600))); }' | awk '{ sum+=$1} END {print sum}'`
+  nhrs=`$STUBL_HOME/bin/slogs $start $u -X "$acct" | awk '{ print $6,":",$3; }' | grep '^[0-9]' | grep '-' | sed 's/-/:/g' | awk -F: '{ printf("%lf\n", $5*(($1*24)+$2+($3/60)+($4/3600))); }' | awk '{ sum+=$1} END {print sum}'`
   sum=`echo "$sum $nhrs" | awk '{ printf("%lf\n", $1+$2); }'`
 done
 echo "CPU hours on vortex since $start : $sum"
-grandSum=$sum
-
-sum=0
-for u in $userList; do
-  # for HH:MM:SS job times
-  nhrs=`ssh -q presto "module load stubl; slogs $start $u --clusters=industry -X $acct" | awk '{ print $6,":",$3; }' | grep '^[0-9]' | grep -v '-' | awk -F: '{ printf("%lf\n", $4*($1+($2/60)+($3/3600))); }' | awk '{ sum+=$1} END {print sum}'`
-  sum=`echo "$sum $nhrs" | awk '{ printf("%lf\n", $1+$2); }'`
-
-  # for DD-HH:MM:SS job times
-  nhrs=`ssh -q presto "module load stubl; slogs $start $u --clusters=industry -X $acct" | awk '{ print $6,":",$3; }' | grep '^[0-9]' | grep '-' | sed 's/-/:/g' | awk -F: '{ printf("%lf\n", $5*(($1*24)+$2+($3/60)+($4/3600))); }' | awk '{ sum+=$1} END {print sum}'`
-  sum=`echo "$sum $nhrs" | awk '{ printf("%lf\n", $1+$2); }'`
-done
-
-if [ "$start" -le "010112" ]; then
-   sum=`echo "$sum $presum" | awk '{ printf("%lf\n", $1+$2); }'`
-fi
-echo "CPU hours on presto since $start : $sum"
-
-grandSum=`expr "$sum $grandSum" | awk '{ printf("%lf\n", $1+$2); }'`
-echo "Grand Total : $grandSum"
-
