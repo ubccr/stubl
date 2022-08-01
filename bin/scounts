@@ -83,8 +83,8 @@ if [ "$option" == "--group" ]; then
   rm -f tmp1
 elif [ "$option" == "--account" ]; then
   acct=`echo $1 | cut -d= -f2`
-  ssh -q vortex "sacctmgr show associations account=$acct format=Cluster,Account,User" | awk '{ print $3 }' | sed -n '4,$p' | sort -u | grep -v '^$' > tmp1
-  ssh -q presto "sacctmgr show associations account=$acct format=Cluster,Account,User" | awk '{ print $3 }' | sed -n '4,$p' | sort -u | grep -v '^$' >> tmp1
+  ssh -q vortex "$STUBL_SACCTMGR show associations account=$acct format=Cluster,Account,User" | awk '{ print $3 }' | sed -n '4,$p' | sort -u | grep -v '^$' > tmp1
+  ssh -q presto "$STUBL_SACCTMGR show associations account=$acct format=Cluster,Account,User" | awk '{ print $3 }' | sed -n '4,$p' | sort -u | grep -v '^$' >> tmp1
   userList=`sort -u tmp1 | tr '\n' ' '`
   rm -f tmp1
 

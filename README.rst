@@ -27,7 +27,7 @@ INSTALL
 - Copy the sample config file and edit to taste::
 
   $ cp conf/stubl.sample conf/stubl
-  $ vim conf/stulb
+  $ vim conf/stubl
 
 - Create empty NodeInfo.log file::
 

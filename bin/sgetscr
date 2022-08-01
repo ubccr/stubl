@@ -52,12 +52,12 @@ if [ "$jobId" == "" -o "$jobId" == "--help" ]; then
   exit
 fi
 
-curState=`squeue --job=${jobId} --clusters=${cluster} --partition=${partition} -ho "%T" 2>/dev/null | tail -n1`
+curState=`$STUBL_SQUEUE --job=${jobId} --clusters=${cluster} --partition=${partition} -ho "%T" 2>/dev/null | tail -n1`
 
 # echo "curState = $curState"
 
 if [ "${curState}" != "PENDING" ]; then
-  start=`sacct -M $cluster -j $jobId -o Start -n -P -X | cut -dT -f1 | sed 's/-//g'`
+  start=`$STUBL_SACCT -M $cluster -j $jobId -o Start -n -P -X | cut -dT -f1 | sed 's/-//g'`
   fname=$STUBL_JOBSCRIPT_ROOT_DIR/$cluster/$start/${jobId}.savescript
   if [ -f $fname ]; then
     cat $fname | tee job_${jobId}_script.txt
@@ -66,7 +66,7 @@ if [ "${curState}" != "PENDING" ]; then
     echo "I looked here: $fname"
   fi
 else
-  fname=`scontrol show job $jobId --clusters=$cluster | grep " Command=" | cut -d= -f2 | awk '{ print $1 }'`
+  fname=`$STUBL_SCONTROL show job $jobId --clusters=$cluster | grep " Command=" | cut -d= -f2 | awk '{ print $1 }'`
   if [ ! -f "$fname" ]; then
     echo "Job script not available. jobid=$jobId and cluster=$cluster"
   else  

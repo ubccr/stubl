@@ -94,7 +94,7 @@ bPlus=`echo " $@ " | grep ' --plus\|^--plus ' | wc -l`
 TheArgs=`echo " $@ " | sed 's/^--plus //g' | sed 's/ --plus//g'`
 
 if [ "$TheGroup" == "all" ]; then
-    TheGroup=`sacct --start=${StartDate} --allusers $TheArgs -ouser -n | \
+    TheGroup=`$STUBL_SACCT --start=${StartDate} --allusers $TheArgs -ouser -n | \
              sort -u | \
              sed 's/ //g' | \
              tr '\n' ',' | \
@@ -133,9 +133,9 @@ for i in $TheList; do
   echo "Retrieving accounting data for user $i ..."
   user9=`echo $i | awk '{ printf("%9s", $1); }'`
   if [ "$bHeader" == "1" ]; then
-    sacct --start=${StartDate} --user=$i $TheArgs  | $TINS 21 "$user9" 2 >> $TMPFILE
+    $STUBL_SACCT --start=${StartDate} --user=$i $TheArgs  | $TINS 21 "$user9" 2 >> $TMPFILE
   else
-    sacct --start=${StartDate} --user=$i -n $TheArgs  | $TINS 21 "$user9" 0 >> $TMPFILE
+    $STUBL_SACCT --start=${StartDate} --user=$i -n $TheArgs  | $TINS 21 "$user9" 0 >> $TMPFILE
   fi
   bHeader=0
 done

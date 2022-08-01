@@ -75,24 +75,24 @@ htmltmp=$STUBL_TMP_DIR/xqstat.htmltmp.$$
 html=$STUBL_TMP_DIR/xqstat.html.$$
 tpltmp=$STUBL_TMP_DIR/xqstat.tpltmp.$$
 
-sinfo $cArg -h -o "%C" | \
+$STUBL_SINFO $cArg -h -o "%C" | \
   grep -v "^CLUSTER" | \
   grep -v "^$" | \
   awk -F "/" '{ sum1+=$1;sum2+=$2;sum3+=$3;sum4+=$4;} END {print sum1,sum2,sum3,sum4}' | \
   sed 's: :/:g' > $cputmp
 
-sinfo $cArg -h -o "%F" |
+$STUBL_SINFO $cArg -h -o "%F" |
   grep -v "^CLUSTER" | \
   grep -v "^$" | \
   awk -F "/" '{ sum1+=$1;sum2+=$2;sum3+=$3;sum4+=$4;} END {print sum1,sum2,sum3,sum4}' | \
   sed 's: :/:g' > $ndetmp
 
-sinfo $cArg | egrep '^[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+mix[[:space:]]' | awk '{ print $6 }' | nodeset -c > $mixtmp
-sinfo $cArg -h -o "%N %P %C %A" | \
+$STUBL_SINFO $cArg | egrep '^[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+mix[[:space:]]' | awk '{ print $6 }' | nodeset -c > $mixtmp
+$STUBL_SINFO $cArg -h -o "%N %P %C %A" | \
    grep -v "^CLUSTER" | \
    grep -v "^$" | \
    egrep -v "$STUBL_SQSTAT_EXCLUDES" > $sintmp
-squeue $uArg $cArg -h -S i -o "%10i %10u %16P %12j %.5D %.5C %.6m %.13l %.2t %.13M  %N" | grep -v "^CLUSTER" | grep -v "^$" | sed -E 's/(^[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+)PD[[:space:]]/\1 Q /' > $tmp
+$STUBL_SQUEUE $uArg $cArg -h -S i -o "%10i %10u %16P %12j %.5D %.5C %.6m %.13l %.2t %.13M  %N" | grep -v "^CLUSTER" | grep -v "^$" | sed -E 's/(^[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+)PD[[:space:]]/\1 Q /' > $tmp
 
 # job information for summary output
 activeJobs=`cat $tmp | egrep '^[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+R[[:space:]]' | wc -l`

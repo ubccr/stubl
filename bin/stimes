@@ -53,7 +53,7 @@ echo "JOBID       USER      PARTITION        JOB_NAME      REQUEST_TIME NODES  C
 now=`date "+%s"`
 nrows=`stty -a | head -n1 | tr ';' '\n' | grep rows | awk '{ print $2 }'`
 nrows=`expr $nrows - 2`
-squeue -t PD -o "%.11i %.15P %.12j %.8u %.12l %.5D %C %R %p %S" -r -S -pi -h $@ | \
+$STUBL_SQUEUE -t PD -o "%.11i %.15P %.12j %.8u %.12l %.5D %C %R %p %S" -r -S -pi -h $@ | \
 awk -v now=$now -v nrows=$nrows '
 {split($10,st,"T"); 
  if(st[1] != "N/A" ) 
